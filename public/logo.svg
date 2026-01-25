@@ -1,0 +1,10 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="6" y="6" width="52" height="52" rx="16" fill="#2563EB"/>
+
+  <!-- Location Pin -->
+  <path d="M32 18C25.925 18 21 22.925 21 29C21 37.2 32 47 32 47C32 47 43 37.2 43 29C43 22.925 38.075 18 32 18Z" fill="white"/>
+  <circle cx="32" cy="29" r="4" fill="#2563EB"/>
+
+  <!-- Plane -->
+  <path d="M44 20L48 24L38 32L36 41L33 38L30 35L39 33L44 20Z" fill="white" opacity="0.95"/>
+</svg>
