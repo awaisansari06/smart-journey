@@ -17,11 +17,11 @@ import Image, { ImageProps } from "next/image";
 import { useOutsideClick } from "@/hooks/use-outside-click";
 
 interface CarouselProps {
-  items: JSX.Element[];
+  items: React.ReactNode[];
   initialScroll?: number;
 }
 
-type Card = {
+type CarouselCard = {
   src: string;
   title: string;
   category: string;
@@ -32,7 +32,7 @@ export const CarouselContext = createContext<{
   onCardClose: (index: number) => void;
   currentIndex: number;
 }>({
-  onCardClose: () => {},
+  onCardClose: () => { },
   currentIndex: 0,
 });
 
@@ -158,7 +158,7 @@ export const Card = ({
   index,
   layout = false,
 }: {
-  card: Card;
+  card: CarouselCard;
   index: number;
   layout?: boolean;
 }) => {

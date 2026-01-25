@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Carousel, Card } from "@/components/ui/apple-cards-carousel";
+import { Button } from "@/components/ui/button";
 
 export function PopularCityList() {
     const cards = data.map((card, index) => (
@@ -9,10 +10,20 @@ export function PopularCityList() {
     ));
 
     return (
-        <div className="w-full h-full py-20">
-            <h2 className="max-w-7xl pl-4 mx-auto text-xl md:text-3xl font-bold text-neutral-800 dark:text-neutral-200 font-sans">
-                Popular Destination to Visit
-            </h2>
+        <div className="w-full h-full py-10">
+            <div className="flex flex-col md:flex-row justify-between items-center max-w-7xl mx-auto px-4 mb-8">
+                <div className="text-center md:text-left mb-6 md:mb-0">
+                    <h2 className="text-2xl md:text-4xl font-bold text-neutral-800 dark:text-neutral-200 font-sans">
+                        Popular destinations
+                    </h2>
+                    <p className="text-neutral-500 text-sm md:text-base mt-2">
+                        Handpicked places you can explore with one click
+                    </p>
+                </div>
+                <Button variant="outline" className="rounded-full">
+                    View all destinations
+                </Button>
+            </div>
             <Carousel items={cards} />
         </div>
     );
