@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useUser, useClerk } from "@clerk/nextjs";
 import { ArrowDown, Globe2, Landmark, Plane, Send } from "lucide-react";
@@ -29,6 +29,20 @@ const suggestions = [
 
 function Hero() {
 
+    const { user } = useUser();
+    //const { openSignIn } = useClerk();
+    const router = useRouter();
+
+    const onSend = () => {
+        if (!user) {
+            //openSignIn();
+            router.push('/sign-in');
+            return;
+        }
+        //Navigate to Create Trip Planner Web Page
+        router.push('/create-new-trip');
+    }
+
     return (
         <div className="flex justify-center bg-linear-to-b from-blue-50 via-white to-white pt-24 pb-12">
             {/* Content */}
@@ -49,7 +63,7 @@ function Hero() {
                             placeholder="Create a trip for Paris from New York"
                             className="h-28 w-full resize-none border-none bg-transparent shadow-none focus-visible:ring-0"
                         />
-                        <Button size={"icon"} className="absolute bottom-6 right-6">
+                        <Button size={"icon"} className="absolute bottom-6 right-6" onClick={() => onSend()}>
                             <Send className="h-4 w-4" />
                         </Button>
                     </div>
