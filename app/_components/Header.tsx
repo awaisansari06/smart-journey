@@ -3,6 +3,7 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { UserButton, SignedIn, SignedOut, SignInButton, SignUpButton } from "@clerk/nextjs";
 
 const menuOptions = [
   {
@@ -36,7 +37,19 @@ function Header() {
           </Link>
         ))}
       </div>
-      <Button>Get Started</Button>
+      <div className='flex gap-2 items-center'>
+        <SignedIn>
+          <UserButton />
+        </SignedIn>
+        <SignedOut>
+          <SignInButton mode="modal">
+            <Button>Sign In</Button>
+          </SignInButton>
+          <SignUpButton mode="modal">
+            <Button>Sign Up</Button>
+          </SignUpButton>
+        </SignedOut>
+      </div>
     </div>
 
   )
