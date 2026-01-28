@@ -10,6 +10,8 @@ function CreateNewTrip() {
     const [isDragging, setIsDragging] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
 
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+
     const startResizing = () => {
         setIsDragging(true);
     };
@@ -52,7 +54,7 @@ function CreateNewTrip() {
         <div ref={containerRef} className='flex flex-col md:flex-row h-[calc(100vh-80px)] w-full overflow-hidden'>
             {/* Left Panel - Chat */}
             <div
-                className='h-full w-full md:w-(--left-width) overflow-hidden bg-white dark:bg-black border-r relative z-10'
+                className='h-full w-full md:w-(--left-width) bg-white dark:bg-black border-r relative z-10 shrink-0'
                 style={{ '--left-width': `${leftPanelWidth}%` } as React.CSSProperties}
             >
                 <div className="h-full w-full">
@@ -62,15 +64,15 @@ function CreateNewTrip() {
 
             {/* Resizer Handle (Hidden on Mobile) */}
             <div
-                className='hidden md:flex w-2 bg-gray-100 dark:bg-gray-800 hover:bg-blue-400/40 cursor-col-resize items-center justify-center transition-all group z-20 hover:w-3'
+                className='hidden md:flex w-2 bg-gray-100 dark:bg-gray-800 hover:bg-blue-400/40 cursor-col-resize items-center justify-center transition-all group z-20 hover:w-3 flex-shrink-0'
                 onMouseDown={startResizing}
             >
                 <GripVertical className="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
             </div>
 
             {/* Right Panel - Map Placeholder */}
-            <div>
-                <Itinerary />
+            <div ref={scrollContainerRef} className="flex-1 h-full overflow-y-auto overflow-x-hidden relative">
+                <Itinerary scrollContainer={scrollContainerRef} />
             </div>
         </div>
     )
