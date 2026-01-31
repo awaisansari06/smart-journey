@@ -2,24 +2,24 @@ import Link from "next/link";
 import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import type { Hotel } from "./types";
+import type { Activity } from "./types";
 
 type Props = {
-    hotel: Hotel;
+    activity: Activity;
 };
 
-function HotelCardItem({ hotel }: Props) {
+function PlaceCardItem({ activity }: Props) {
     const [photoUrl, setPhotoUrl] = useState<string>();
 
     useEffect(() => {
-        if (hotel?.hotel_name) GetGooglePlaceDetail();
+        if (activity?.place_name) GetGooglePlaceDetail();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [hotel?.hotel_name]);
+    }, [activity?.place_name]);
 
     const GetGooglePlaceDetail = async () => {
         try {
             const result = await axios.post("/api/google-place-detail", {
-                placeName: hotel?.hotel_name,
+                placeName: activity?.place_name,
             });
 
             if (result?.data?.error) return;
@@ -32,8 +32,8 @@ function HotelCardItem({ hotel }: Props) {
 
     const imageSrc =
         photoUrl ||
-        (hotel?.hotel_image_url && !hotel.hotel_image_url.includes("example.com")
-            ? hotel.hotel_image_url
+        (activity?.place_image_url && !activity.place_image_url.includes("example.com")
+            ? activity.place_image_url
             : "/placeholder.jpg");
 
     return (
@@ -41,27 +41,28 @@ function HotelCardItem({ hotel }: Props) {
             <div className="relative h-[250px] w-full">
                 <Image
                     src={imageSrc}
-                    alt={hotel?.hotel_name || "Hotel Image"}
+                    alt={activity?.place_name || "Place Image"}
                     fill
                     className="object-cover"
                 />
             </div>
 
             <div className="p-4 flex flex-col gap-2">
-                <h2 className="font-bold text-lg line-clamp-1">{hotel?.hotel_name}</h2>
+                <h2 className="font-bold text-lg line-clamp-1">{activity?.place_name}</h2>
 
                 <p className="text-xs text-gray-500 line-clamp-2">
-                    📍 {hotel?.hotel_address}
+                    {activity?.place_details}
                 </p>
 
-                <div className="flex justify-between items-center">
-                    <p className="text-sm text-green-700 font-medium">💵 {hotel?.price_per_night}</p>
-                    <p className="text-sm font-bold">⭐ {hotel?.rating}</p>
+                <div className="flex flex-col gap-1">
+                    <p className="text-sm text-blue-600 font-medium">🎫 {activity?.ticket_pricing}</p>
+                    <p className="text-sm text-orange-600">⏰ {activity?.time_travel_each_location}</p>
+                    <p className="text-sm text-yellow-600">⭐ {activity?.best_time_to_visit}</p>
                 </div>
 
                 <Link
                     href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                        `${hotel?.hotel_name},${hotel?.hotel_address}`
+                        `${activity?.place_name},${activity?.place_address}`
                     )}`}
                     target="_blank"
                     className="w-full text-center mt-2"
@@ -74,4 +75,4 @@ function HotelCardItem({ hotel }: Props) {
         </div>
     );
 }
-export default HotelCardItem;
+export default PlaceCardItem;

@@ -10,21 +10,28 @@ export type Activity = {
     | string;
     place_address: string;
     ticket_pricing: string;
-    time_to_travel: string;
+    time_travel_each_location: string;
+    best_time_to_visit: string;
 };
 
-export type ItineraryDay = {
+export type Itinerary = {
     day: string | number;
-    plan: string;
+    day_plan: string;
+    best_time_to_visit_day: string;
     activities: Activity[];
 };
 
-export interface Hotel {
+export type Hotel = {
     hotel_name: string;
     hotel_address: string;
-    price: string;
-    rating: number;
+    price_per_night: string;
     hotel_image_url: string;
+    geo_coordinates: {
+        lat: number;
+        lng: number;
+    }
+    rating: number;
+    description: string;
 }
 
 export type TripInfo = {
@@ -34,5 +41,5 @@ export type TripInfo = {
     group_size: string;
     origin: string;
     hotels: Hotel[];
-    itinerary: ItineraryDay[];
+    itinerary: Itinerary[];
 };
