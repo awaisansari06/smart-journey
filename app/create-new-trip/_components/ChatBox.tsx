@@ -14,6 +14,7 @@ import { api } from '@/convex/_generated/api';
 import { UserDetailContext } from '@/context/UserDetailContext';
 import { useContext } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { useTripDetail } from '@/app/provider';
 
 type Message = {
     role: string,
@@ -36,6 +37,7 @@ function ChatBox() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [tripData, setTripData] = useState<any>({}); // Add tripData state
     const [tripDetail, setTripDetail] = useState<TripInfo | null>(null);
+    const { tripDetailInfo, setTripDetailInfo } = useTripDetail();
     const [isEditOpen, setIsEditOpen] = useState(false); // Edit modal state
     const [isFinal, setIsFinal] = useState(false);
 
@@ -120,6 +122,7 @@ function ChatBox() {
                 // Save to state
                 setTripData(tripPlan);
                 setTripDetail(tripPlan);
+                setTripDetailInfo(tripPlan);
 
                 // Save to DB (Convex)
                 if (userDetail) {
@@ -130,8 +133,11 @@ function ChatBox() {
                         tripDetail: tripPlan
                     });
 
-                    // Redirect to view trip
-                    router.push(`/view-trip/${docId}`);
+                    setMessages((prev) => [...prev, {
+                        role: "assistant",
+                        content: "Your trip is generated.",
+                        timestamp: getCurrentTime()
+                    }]);
                 } else {
                     // Show final message if not logged in
                     setMessages((prev) => [...prev, {
