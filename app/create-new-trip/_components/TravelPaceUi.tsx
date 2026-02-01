@@ -39,7 +39,7 @@ export default function TravelPaceUi({ value, onSelect }: TravelPaceUiProps) {
         </p>
       </div>
 
-      <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="mt-3 grid grid-cols-1 gap-5 md:grid-cols-3">
         {PACES.map((item) => {
           const active = value === item.id;
 

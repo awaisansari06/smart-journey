@@ -6,10 +6,11 @@ import type { Activity } from "./types";
 
 type Props = {
     activity: Activity;
+    onSelect: (image: string, images: string[]) => void;
 };
 
-function PlaceCardItem({ activity }: Props) {
-    const [photoUrl, setPhotoUrl] = useState<string>();
+function PlaceCardItem({ activity, onSelect }: Props) {
+    const [photoUrls, setPhotoUrls] = useState<string[]>([]);
 
     useEffect(() => {
         if (activity?.place_name) GetGooglePlaceDetail();
@@ -24,21 +25,30 @@ function PlaceCardItem({ activity }: Props) {
 
             if (result?.data?.error) return;
 
-            setPhotoUrl(result?.data);
+            // Handle array or legacy string response
+            const data = result?.data;
+            if (Array.isArray(data)) {
+                setPhotoUrls(data);
+            } else if (typeof data === 'string') {
+                setPhotoUrls([data]);
+            }
         } catch (err) {
             console.log("Google place detail error:", err);
         }
     };
 
     const imageSrc =
-        photoUrl ||
+        (photoUrls.length > 0 ? photoUrls[0] : null) ||
         (activity?.place_image_url && !activity.place_image_url.includes("example.com")
             ? activity.place_image_url
             : "/placeholder.jpg");
 
     return (
-        <div className="hover:scale-[1.02] transition-all cursor-pointer border rounded-xl shadow-sm bg-white overflow-hidden">
-            <div className="relative h-[250px] w-full">
+        <div
+            onClick={() => onSelect(imageSrc, photoUrls.length > 0 ? photoUrls : [imageSrc])}
+            className="hover:scale-[1.02] transition-all cursor-pointer border rounded-xl shadow-sm bg-white overflow-hidden group"
+        >
+            <div className="relative h-[180px] w-full">
                 <Image
                     src={imageSrc}
                     alt={activity?.place_name || "Place Image"}
@@ -47,30 +57,20 @@ function PlaceCardItem({ activity }: Props) {
                 />
             </div>
 
-            <div className="p-4 flex flex-col gap-2">
-                <h2 className="font-bold text-lg line-clamp-1">{activity?.place_name}</h2>
-
-                <p className="text-xs text-gray-500 line-clamp-2">
-                    {activity?.place_details}
-                </p>
-
-                <div className="flex flex-col gap-1">
-                    <p className="text-sm text-blue-600 font-medium">🎫 {activity?.ticket_pricing}</p>
-                    <p className="text-sm text-orange-600">⏰ {activity?.time_travel_each_location}</p>
-                    <p className="text-sm text-yellow-600">⭐ {activity?.best_time_to_visit}</p>
+            <div className="p-4 flex flex-col gap-2 h-[160px] justify-between">
+                <div>
+                    <h2 className="font-bold text-lg line-clamp-1">{activity?.place_name}</h2>
+                    <p className="text-xs text-gray-500 line-clamp-2 mt-1">
+                        {activity?.place_details}
+                    </p>
                 </div>
-
-                <Link
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                        `${activity?.place_name},${activity?.place_address}`
-                    )}`}
-                    target="_blank"
-                    className="w-full text-center mt-2"
-                >
-                    <button className="w-full bg-primary/10 text-primary text-sm px-3 py-2 rounded-md border border-primary hover:bg-primary/20 transition-all">
-                        View on Map
-                    </button>
-                </Link>
+                <div className="flex flex-col gap-1 mt-2">
+                    <div className="flex justify-between items-center">
+                        <p className="text-sm text-blue-600 font-medium truncate">🎫 {activity?.ticket_pricing}</p>
+                        <p className="text-sm text-yellow-600 shrink-0">⭐ 4.5</p>
+                    </div>
+                    <p className="text-xs text-orange-600 truncate">⏰ {activity?.time_travel_each_location}</p>
+                </div>
             </div>
         </div>
     );

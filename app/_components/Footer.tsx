@@ -52,7 +52,7 @@ export default function Footer() {
                         <h3 className="font-semibold text-gray-900 dark:text-gray-100">Legal</h3>
                         <div className="flex flex-col gap-2 text-sm text-gray-500 dark:text-gray-400">
                             <Link href="/privacy-policy" className="hover:text-primary transition-colors">Privacy Policy</Link>
-                            <Link href="/terms" className="hover:text-primary transition-colors">Terms of Service</Link>
+                            <Link href="/terms-of-service" className="hover:text-primary transition-colors">Terms of Service</Link>
                             <Link href="https://github.com" target="_blank" className="hover:text-primary transition-colors">
                                 GitHub
                             </Link>

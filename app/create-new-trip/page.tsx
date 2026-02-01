@@ -2,12 +2,14 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import ChatBox from './_components/ChatBox';
-import { GripVertical } from 'lucide-react';
+import { GripVertical, Map, List, Globe2 } from 'lucide-react';
 import Itinerary from './_components/Itinerary';
+import GlobalMap from './_components/GlobalMap';
 
 function CreateNewTrip() {
-    const [leftPanelWidth, setLeftPanelWidth] = useState(45);
+    const [leftPanelWidth, setLeftPanelWidth] = useState(35);
     const [isDragging, setIsDragging] = useState(false);
+    const [viewMode, setViewMode] = useState<'itinerary' | 'map'>('itinerary');
     const containerRef = useRef<HTMLDivElement>(null);
 
     const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -70,9 +72,26 @@ function CreateNewTrip() {
                 <GripVertical className="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
             </div>
 
-            {/* Right Panel - Map Placeholder */}
+            {/* Right Panel - Map Placeholder or Itinerary */}
             <div ref={scrollContainerRef} className="flex-1 h-full overflow-y-auto overflow-x-hidden relative">
-                <Itinerary scrollContainer={scrollContainerRef} />
+
+                {/* View Toggle Button */}
+                <div className="absolute top-5 right-5 z-50 flex gap-2">
+                    <button
+                        onClick={() => setViewMode(viewMode === 'itinerary' ? 'map' : 'itinerary')}
+                        className="bg-white dark:bg-black p-3 rounded-full shadow-lg border border-gray-100 dark:border-zinc-800 hover:scale-105 transition-all active:scale-95 text-primary group"
+                    >
+                        {viewMode === 'itinerary' ? <Globe2 className="h-5 w-5 text-blue-600 animate-pulse group-hover:animate-none" /> : <Map className="h-5 w-5" />}
+                    </button>
+                </div>
+
+                {viewMode === 'itinerary' ? (
+                    <Itinerary scrollContainer={scrollContainerRef} />
+                ) : (
+                    <div className="w-full h-full">
+                        <GlobalMap />
+                    </div>
+                )}
             </div>
         </div>
     )

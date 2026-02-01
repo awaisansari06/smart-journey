@@ -6,10 +6,11 @@ import type { Hotel } from "./types";
 
 type Props = {
     hotel: Hotel;
+    onSelect: (image: string, images: string[]) => void;
 };
 
-function HotelCardItem({ hotel }: Props) {
-    const [photoUrl, setPhotoUrl] = useState<string>();
+function HotelCardItem({ hotel, onSelect }: Props) {
+    const [photoUrls, setPhotoUrls] = useState<string[]>([]);
 
     useEffect(() => {
         if (hotel?.hotel_name) GetGooglePlaceDetail();
@@ -24,21 +25,30 @@ function HotelCardItem({ hotel }: Props) {
 
             if (result?.data?.error) return;
 
-            setPhotoUrl(result?.data);
+            // Handle array or legacy string response
+            const data = result?.data;
+            if (Array.isArray(data)) {
+                setPhotoUrls(data);
+            } else if (typeof data === 'string') {
+                setPhotoUrls([data]);
+            }
         } catch (err) {
             console.log("Google place detail error:", err);
         }
     };
 
     const imageSrc =
-        photoUrl ||
+        (photoUrls.length > 0 ? photoUrls[0] : null) ||
         (hotel?.hotel_image_url && !hotel.hotel_image_url.includes("example.com")
             ? hotel.hotel_image_url
             : "/placeholder.jpg");
 
     return (
-        <div className="hover:scale-[1.02] transition-all cursor-pointer border rounded-xl shadow-sm bg-white overflow-hidden">
-            <div className="relative h-[250px] w-full">
+        <div
+            onClick={() => onSelect(imageSrc, photoUrls.length > 0 ? photoUrls : [imageSrc])}
+            className="hover:scale-[1.02] transition-all cursor-pointer border rounded-xl shadow-sm bg-white overflow-hidden group"
+        >
+            <div className="relative h-[180px] w-full">
                 <Image
                     src={imageSrc}
                     alt={hotel?.hotel_name || "Hotel Image"}
@@ -47,29 +57,17 @@ function HotelCardItem({ hotel }: Props) {
                 />
             </div>
 
-            <div className="p-4 flex flex-col gap-2">
-                <h2 className="font-bold text-lg line-clamp-1">{hotel?.hotel_name}</h2>
-
-                <p className="text-xs text-gray-500 line-clamp-2">
-                    📍 {hotel?.hotel_address}
-                </p>
-
-                <div className="flex justify-between items-center">
+            <div className="p-4 flex flex-col gap-2 h-[160px] justify-between">
+                <div>
+                    <h2 className="font-bold text-lg line-clamp-1">{hotel?.hotel_name}</h2>
+                    <p className="text-xs text-gray-500 line-clamp-2 mt-1">
+                        📍 {hotel?.hotel_address}
+                    </p>
+                </div>
+                <div className="flex justify-between items-center mt-2">
                     <p className="text-sm text-green-700 font-medium">💵 {hotel?.price_per_night}</p>
                     <p className="text-sm font-bold">⭐ {hotel?.rating}</p>
                 </div>
-
-                <Link
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                        `${hotel?.hotel_name},${hotel?.hotel_address}`
-                    )}`}
-                    target="_blank"
-                    className="w-full text-center mt-2"
-                >
-                    <button className="w-full bg-primary/10 text-primary text-sm px-3 py-2 rounded-md border border-primary hover:bg-primary/20 transition-all">
-                        View on Map
-                    </button>
-                </Link>
             </div>
         </div>
     );

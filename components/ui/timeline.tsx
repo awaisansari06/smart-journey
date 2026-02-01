@@ -45,18 +45,18 @@ export const Timeline = ({ data, scrollContainer, tripData }: { data: TimelineEn
           Your Trip Itinerary from <strong className="text-primary">{tripData?.origin}</strong> to <strong className="text-primary">{tripData?.destination}</strong> is Ready
         </h2>
         <div className="flex gap-5 items-center">
-        <div className="flex items-center gap-2">
-          <Calendar />
-          <h2>{tripData?.duration}</h2>
-        </div>
-        <div className="flex items-center gap-2">
-          <Wallet2 />
-          <h2>{tripData?.budget}</h2>
-        </div>
-        <div className="flex items-center gap-2">
-          <Users />
-          <h2>{tripData?.group_size}</h2>
-        </div>
+          <div className="flex items-center gap-2">
+            <Calendar />
+            <h2>{tripData?.duration}</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <Wallet2 />
+            <h2>{tripData?.budget}</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <Users />
+            <h2>{tripData?.group_size}</h2>
+          </div>
         </div>
       </div>
 
@@ -64,6 +64,9 @@ export const Timeline = ({ data, scrollContainer, tripData }: { data: TimelineEn
         {data.map((item, index) => (
           <div
             key={index}
+            // Add ID for scrolling (e.g., "day-1", "day-2"). 
+            // We use item.title to parse the day number safely or fallback
+            id={item.title.toLowerCase().replace(/\s/g, '-')}
             className="flex justify-start pt-10 md:pt-10 md:gap-10"
           >
             <div className="sticky flex flex-col md:flex-row z-40 items-center top-40 self-start max-w-xs lg:max-w-sm md:w-[40%]">

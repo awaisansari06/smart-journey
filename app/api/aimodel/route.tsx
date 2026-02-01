@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { aj } from "@/app/api/arcjet/route";
+import { auth, currentUser } from "@clerk/nextjs/server";
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 const model = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash",
-    generationConfig: {
-        responseMimeType: "application/json", // Ensures strict JSON response
-    },
+  model: "gemini-2.0-flash",
+  generationConfig: {
+    responseMimeType: "application/json", // Ensures strict JSON response
+  },
 });
 
 const PROMPT = `
@@ -127,9 +129,12 @@ JSON schema:
 
 
 const FINAL_PROMPT = `
-Generate Travel Plan with give details, give me Hotels options list with HotelName,
+Generate Travel Plan with give details, give me Hotels options list (Minimum 8-10 hotels) with HotelName,
 Hotel address, Price, hotel image url, geo coordinates, rating, descriptions and suggest itinerary with placeName, Place Details, Place Image Url,
 Geo Coordinates, Place address, ticket Pricing, Time travel each of the location , with each day plan with best time to visit in JSON format.
+If Travel Pace is 'Moderate', suggest exactly 5 places per day.
+If Travel Pace is 'Packed', suggest minimum 6-8 places per day.
+If Travel Pace is 'Relaxed', suggest 2-3 places per day.
 Output Schema:
 {
   "trip_plan": {
@@ -179,43 +184,60 @@ Output Schema:
 `;
 
 export async function POST(request: NextRequest) {
-    try {
-        const { messages, isFinal } = await request.json();
+  try {
+    const { messages, isFinal } = await request.json();
+    const user = await currentUser();
+    const { has } = await auth();
+    const hasPremiumAccess = has({ plan: "monthly" });
+    console.log("hasPremiumAccess", hasPremiumAccess);
+    const decision = await aj.protect(request, { userId: user?.primaryEmailAddress?.emailAddress ?? '', requested: isFinal ? 5 : 0 }); // Deduct 5 tokens for ALL requests for testing
 
-        // 1. Separate the last user message from the history
-        const lastMessage = messages[messages.length - 1];
-        const historyMessages = messages.slice(0, -1);
 
-        // 2. Select Prompt
-        const activePrompt = isFinal ? FINAL_PROMPT : PROMPT;
 
-        // 3. Start the Chat Session with System Instructions
-        const chat = model.startChat({
-            history: historyMessages.map((msg: any) => ({
-                role: msg.role === "assistant" ? "model" : "user",
-                parts: [{ text: msg.content }],
-            })),
-            systemInstruction: {
-                role: 'system',
-                parts: [{ text: activePrompt }]
-            },
-        });
+    console.log("Arcjet decision", decision);
+    console.log(`Debug: isFinal=${isFinal}, requested=5`);
 
-        // 4. Send the message
-        const result = await chat.sendMessage(lastMessage.content);
-        const responseText = result.response.text();
-
-        // 5. Return parsed JSON (Safe extraction)
-        const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-        if (!jsonMatch) {
-            throw new Error("No valid JSON found in response");
-        }
-
-        const jsonStr = jsonMatch[0];
-        return NextResponse.json(JSON.parse(jsonStr));
-    } catch (e) {
-        console.error("Error in AI Model API:", e);
-        const errorMessage = e instanceof Error ? e.message : "Unknown error occurred";
-        return NextResponse.json({ error: errorMessage }, { status: 500 });
+    if ((decision.reason as any)?.remaining === 0 && !hasPremiumAccess) {
+      return NextResponse.json({
+        resp: "No Free Credit Remaining",
+        ui: "limit"
+      });
     }
+
+    // 1. Separate the last user message from the history
+    const lastMessage = messages[messages.length - 1];
+    const historyMessages = messages.slice(0, -1);
+
+    // 2. Select Prompt
+    const activePrompt = isFinal ? FINAL_PROMPT : PROMPT;
+
+    // 3. Start the Chat Session with System Instructions
+    const chat = model.startChat({
+      history: historyMessages.map((msg: any) => ({
+        role: msg.role === "assistant" ? "model" : "user",
+        parts: [{ text: msg.content }],
+      })),
+      systemInstruction: {
+        role: 'system',
+        parts: [{ text: activePrompt }]
+      },
+    });
+
+    // 4. Send the message
+    const result = await chat.sendMessage(lastMessage.content);
+    const responseText = result.response.text();
+
+    // 5. Return parsed JSON (Safe extraction)
+    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error("No valid JSON found in response");
+    }
+
+    const jsonStr = jsonMatch[0];
+    return NextResponse.json(JSON.parse(jsonStr));
+  } catch (e) {
+    console.error("Error in AI Model API:", e);
+    const errorMessage = e instanceof Error ? e.message : "Unknown error occurred";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
+  }
 }
