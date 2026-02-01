@@ -21,12 +21,15 @@ export async function POST(req: NextRequest) {
     },
       config);
 
-    if (result.data?.places?.[0]?.photos?.[0]?.name) {
-      const placeRefName = result.data.places[0].photos[0].name;
-      const PhotoRefUrl = `https://places.googleapis.com/v1/${placeRefName}/media?maxHeightPx=1000&maxWidthPx=1000&key=${apiKey}`
-      return NextResponse.json(PhotoRefUrl);
+    if (result.data?.places?.[0]?.photos) {
+      const photos = result.data.places[0].photos.slice(0, 3);
+      const photoUrls = photos.map((photo: any) => {
+        const placeRefName = photo.name;
+        return `https://places.googleapis.com/v1/${placeRefName}/media?maxHeightPx=1000&maxWidthPx=1000&key=${apiKey}`;
+      });
+      return NextResponse.json(photoUrls);
     }
-    return NextResponse.json(null);
+    return NextResponse.json([]);
   }
   catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : String(e) })

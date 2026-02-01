@@ -36,6 +36,7 @@ function Provider({
         email: user?.primaryEmailAddress?.emailAddress ?? '',
         name: user?.fullName ?? '',
         imageUrl: user?.imageUrl ?? '',
+        subscription: (user?.publicMetadata?.subscription as string) || 'unset' // Pass subscription
       });
       setUserDetail(result);
     }
@@ -59,5 +60,10 @@ export const useUserDetail = () => {
 }
 
 export const useTripDetail = (): TripContextType => {
-  return useContext(TripDetailContext);
+  const context = useContext(TripDetailContext);
+  if (!context) {
+    throw new Error("UseTripDetail must be used within TripDetailProvider");
+  }
+  return context;
 }
+

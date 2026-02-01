@@ -9,7 +9,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import UiRenderer from './UiRenderer';
 import EditTripDialog from './EditTripDialog';
 import { TripInfo } from './types';
-import { useMutation } from 'convex/react';
+import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { UserDetailContext } from '@/context/UserDetailContext';
 import { useContext } from 'react';
@@ -20,29 +20,87 @@ type Message = {
     role: string,
     content: string,
     timestamp?: string;
-    ui?: string; // Add ui property to Message type
+    ui?: string;
 }
 
 function ChatBox() {
     const searchParams = useSearchParams();
     const router = useRouter();
+    // Get tripId from URL or generate one (but don't set in state yet to avoid mismatch)
+    const tripIdParam = searchParams.get('tripId');
     const query = searchParams.get('query');
 
     const { userDetail } = useContext(UserDetailContext);
+
+    // Convex Mutations
     const createTripDetail = useMutation(api.tripDetail.CreateTripDetail);
+    const updateTripDetail = useMutation(api.tripDetail.UpdateTrip);
+    const saveMessage = useMutation(api.chat.SendMessage);
+
+    // Convex Queries (enabled only if we have a tripId)
+    // We use a ref or state to hold the 'active' tripId to separate from URL param
+    const [sessionId, setSessionId] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (tripIdParam) {
+            setSessionId(tripIdParam);
+        } else {
+            // Generate new Trip ID if none exists
+            const newTripId = uuidv4();
+            setSessionId(newTripId);
+
+            // Clear existing state to prevent showing previous trip data
+            setTripData({});
+            setTripDetailInfo(null);
+
+            // Update URL without reloading
+            const newUrl = `/create-new-trip?tripId=${newTripId}`;
+            router.replace(newUrl);
+        }
+    }, [tripIdParam]);
+
+    // Load data from DB
+    const dbMessages = useQuery(api.chat.GetMessages, sessionId ? { tripId: sessionId } : "skip");
+    const dbTrip = useQuery(api.tripDetail.GetTrip, sessionId ? { tripId: sessionId } : "skip");
 
     const [messages, setMessages] = useState<Message[]>([]);
     const [userInput, setUserInput] = useState<string>("");
     const [loading, setLoading] = useState<boolean>(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [tripData, setTripData] = useState<any>({}); // Add tripData state
-    const [tripDetail, setTripDetail] = useState<TripInfo | null>(null);
-    const { tripDetailInfo, setTripDetailInfo } = useTripDetail();
-    const [isEditOpen, setIsEditOpen] = useState(false); // Edit modal state
+    const [tripData, setTripData] = useState<any>({});
+    const { setTripDetailInfo } = useTripDetail();
+    const [isEditOpen, setIsEditOpen] = useState(false);
     const [isFinal, setIsFinal] = useState(false);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const initialized = useRef(false);
+
+    // Sync Messages from DB
+    useEffect(() => {
+        if (dbMessages) {
+            // @ts-ignore
+            setMessages(dbMessages);
+        }
+    }, [dbMessages]);
+
+    // Sync Trip Data from DB
+    useEffect(() => {
+        if (dbTrip && dbTrip.tripDetail) {
+            setTripData(dbTrip.tripDetail);
+            setTripDetailInfo(dbTrip.tripDetail);
+
+            // Fix for Legacy Trips: If we have trip data but NO messages in DB
+            if (dbMessages !== undefined && dbMessages.length === 0) {
+                const legacyMsg: Message = {
+                    role: "assistant",
+                    content: "Here is the plan for your trip to " + (dbTrip.tripDetail?.locationInfo?.name || "your destination"),
+                    ui: "tripResult",
+                    timestamp: getCurrentTime()
+                };
+                setMessages([legacyMsg]);
+            }
+        }
+    }, [dbTrip, dbMessages]);
 
     // Auto-scroll to bottom
     const scrollToBottom = () => {
@@ -121,7 +179,6 @@ function ChatBox() {
 
                 // Save to state
                 setTripData(tripPlan);
-                setTripDetail(tripPlan);
                 setTripDetailInfo(tripPlan);
 
                 // Save to DB (Convex)
@@ -243,9 +300,35 @@ function ChatBox() {
             {/* TASK 3: Chat Messages */}
             <div className='flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth'>
                 {messages.length === 0 && !loading && (
-                    <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-2 opacity-50">
-                        <Sparkles className="w-12 h-12 mb-2" />
-                        <p>Start a conversation to plan your trip.</p>
+                    <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-4 opacity-100">
+                        {tripData?.locationInfo ? (
+                            // Existing Trip Summary Card (Empty State Upgrade)
+                            <div className="w-full max-w-sm bg-gray-50 dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl p-5 shadow-sm">
+                                <h3 className="text-gray-900 dark:text-gray-100 font-bold text-lg mb-1">
+                                    Planning trip to {tripData?.locationInfo?.name || "Unknown"}
+                                </h3>
+                                <div className="flex gap-3 text-xs text-gray-500 mb-4">
+                                    <span className="bg-white dark:bg-black px-2 py-1 rounded border border-gray-100 dark:border-zinc-800">
+                                        📅 {tripData?.tripDuration || "N/A"} Days
+                                    </span>
+                                    <span className="bg-white dark:bg-black px-2 py-1 rounded border border-gray-100 dark:border-zinc-800">
+                                        💰 {tripData?.budget || "Flexible"} Budget
+                                    </span>
+                                </div>
+                                <Button
+                                    className="w-full"
+                                    onClick={() => onSend("Continue planning this trip")}
+                                >
+                                    Continue planning this trip
+                                </Button>
+                            </div>
+                        ) : (
+                            // Generic Placeholder
+                            <>
+                                <Sparkles className="w-12 h-12 mb-2 opacity-50" />
+                                <p className="opacity-50">Start a conversation to plan your trip.</p>
+                            </>
+                        )}
                     </div>
                 )}
 

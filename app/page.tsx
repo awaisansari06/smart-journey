@@ -8,6 +8,7 @@ import FooterCallToAction from "./_components/FooterCallToAction";
 import Footer from "./_components/Footer";
 import ActivityTicker from "@/components/ui/activity-ticker";
 import TripTemplates from "./_components/TripTemplates";
+
 import { motion } from "framer-motion";
 
 export default function Home() {
@@ -27,10 +28,12 @@ export default function Home() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="mb-24"
+          className="mb-8"
         >
           <TripTemplates />
         </motion.section>
+
+
 
         <motion.section
           initial={{ opacity: 0, y: 30 }}

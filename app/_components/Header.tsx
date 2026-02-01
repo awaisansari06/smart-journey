@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import GradientButton from '@/components/ui/gradient-button';
 import { UserButton, SignedIn, SignedOut, SignInButton, SignUpButton } from "@clerk/nextjs";
+import { usePathname } from 'next/navigation';
 
 const menuOptions = [
   {
@@ -26,6 +27,7 @@ const menuOptions = [
 
 function Header() {
   const { user } = useUser();
+  const pathname = usePathname();
   const [scrolled, setScrolled] = React.useState(false);
 
   React.useEffect(() => {
@@ -38,8 +40,8 @@ function Header() {
 
   return (
     <header className={`sticky top-0 z-50 w-full transition-all duration-300 ${scrolled
-        ? 'bg-white/70 dark:bg-black/70 backdrop-blur-md shadow-sm border-b border-gray-100 dark:border-white/10'
-        : 'bg-transparent border-transparent'
+      ? 'bg-white/70 dark:bg-black/70 backdrop-blur-md shadow-sm border-b border-gray-100 dark:border-white/10'
+      : 'bg-transparent border-transparent'
       }`}>
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
         {/* Left Logo */}
@@ -64,9 +66,11 @@ function Header() {
             <Link href={'/dashboard'}>
               <GradientButton variant="outline" className="hidden sm:flex">Dashboard</GradientButton>
             </Link>
-            <Link href={'/create-new-trip'}>
-              <GradientButton>Create New Trip</GradientButton>
-            </Link>
+            {pathname !== '/create-new-trip' &&
+              <Link href={'/create-new-trip'}>
+                <GradientButton>Create New Trip</GradientButton>
+              </Link>
+            }
             <UserButton />
           </SignedIn>
           <SignedOut>

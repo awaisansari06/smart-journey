@@ -1,221 +1,90 @@
 "use client";
 
-import React, { useState,useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Timeline } from '@/components/ui/timeline';
 import HotelCardItem from './HotelCardItem';
 import PlaceCardItem from './PlaceCardItem';
 import { useTripDetail } from '@/app/provider';
 import { TripContextType } from '@/context/TripDetailContext';
-import { TripInfo } from './types';
+import { TripInfo, ModalItem } from './types';
 import Image from "next/image";
 import { ArrowLeft } from 'lucide-react';
+import TripItemModal from './TripItemModal';
+import GlobalMap from './GlobalMap';
 
-{/*const TRIP_DATA = {
-    "destination": "London",
-    "duration": "3 days",
-    "origin": "Mumbai",
-    "budget": "High",
-    "group_size": "2",
-    "hotels": [
-        {
-            "hotel_name": "The Savoy",
-            "hotel_address": "Strand, London WC2R 0EZ, United Kingdom",
-            "price_per_night": "£600",
-            "hotel_image_url": "https://example.com/savoy.jpg",
-            "geo_coordinates": {
-                "lat": 51.5114,
-                "lng": -0.1163
-            },
-            "rating": 4.8,
-            "description": "An iconic luxury hotel with a rich history, offering exquisite dining and stunning views."
-        },
-        {
-            "hotel_name": "The Langham",
-            "hotel_address": "1C Portland Place, Regent Street, London W1B 1JA, United Kingdom",
-            "price_per_night": "£550",
-            "hotel_image_url": "https://example.com/langham.jpg",
-            "geo_coordinates": {
-                "lat": 51.5162,
-                "lng": -0.1391
-            },
-            "rating": 4.7,
-            "description": "A grand hotel known for its elegant rooms, exceptional service, and afternoon tea."
-        },
-        {
-            "hotel_name": "Shangri-La Hotel at The Shard, London",
-            "hotel_address": "31 St Thomas Street, London SE1 9QU, United Kingdom",
-            "price_per_night": "£700",
-            "hotel_image_url": "https://example.com/shangri-la.jpg",
-            "geo_coordinates": {
-                "lat": 51.5045,
-                "lng": -0.0868
-            },
-            "rating": 4.9,
-            "description": "Luxury hotel offering unparalleled views of London from its iconic Shard location."
-        }
-    ],
-    "itinerary": [
-        {
-            "day": 1,
-            "day_plan": "Explore historical landmarks and royal heritage.",
-            "best_time_to_visit_day": "Morning",
-            "activities": [
-                {
-                    "place_name": "Tower of London",
-                    "place_details": "Historic castle with royal history and crown jewels.",
-                    "place_image_url": "https://example.com/toweroflondon.jpg",
-                    "geo_coordinates": {
-                        "lat": 51.5081,
-                        "lng": -0.0759
-                    },
-                    "place_address": "London EC3N 4AB, United Kingdom",
-                    "ticket_pricing": "£30",
-                    "time_travel_each_location": "3 hours",
-                    "best_time_to_visit": "Morning"
-                },
-                {
-                    "place_name": "Buckingham Palace",
-                    "place_details": "The Queen's official residence, witness the Changing of the Guard.",
-                    "place_image_url": "https://example.com/buckingham.jpg",
-                    "geo_coordinates": {
-                        "lat": 51.5014,
-                        "lng": -0.1419
-                    },
-                    "place_address": "London SW1A 1AA, United Kingdom",
-                    "ticket_pricing": "N/A (free to view from outside)",
-                    "time_travel_each_location": "2 hours",
-                    "best_time_to_visit": "Morning (for Changing of the Guard)"
-                },
-                {
-                    "place_name": "Westminster Abbey",
-                    "place_details": "A stunning Gothic church with a rich history of royal coronations and burials.",
-                    "place_image_url": "https://example.com/westminster.jpg",
-                    "geo_coordinates": {
-                        "lat": 51.4993,
-                        "lng": -0.1295
-                    },
-                    "place_address": "20 Deans Yd, London SW1P 3PA, United Kingdom",
-                    "ticket_pricing": "£27",
-                    "time_travel_each_location": "2 hours",
-                    "best_time_to_visit": "Afternoon"
-                }
-            ]
-        },
-        {
-            "day": 2,
-            "day_plan": "Immerse yourself in art, culture, and the vibrant West End.",
-            "best_time_to_visit_day": "Afternoon",
-            "activities": [
-                {
-                    "place_name": "British Museum",
-                    "place_details": "World-renowned museum with artifacts from around the globe.",
-                    "place_image_url": "https://example.com/britishmuseum.jpg",
-                    "geo_coordinates": {
-                        "lat": 51.5189,
-                        "lng": -0.1267
-                    },
-                    "place_address": "Great Russell Street, London WC1B 3DG, United Kingdom",
-                    "ticket_pricing": "Free (special exhibitions may require tickets)",
-                    "time_travel_each_location": "3 hours",
-                    "best_time_to_visit": "Morning"
-                },
-                {
-                    "place_name": "National Gallery",
-                    "place_details": "Housing a collection of Western European paintings from the 13th–19th centuries.",
-                    "place_image_url": "https://example.com/nationalgallery.jpg",
-                    "geo_coordinates": {
-                        "lat": 51.5089,
-                        "lng": -0.1283
-                    },
-                    "place_address": "Trafalgar Square, London WC2N 5DN, United Kingdom",
-                    "ticket_pricing": "Free (special exhibitions may require tickets)",
-                    "time_travel_each_location": "2 hours",
-                    "best_time_to_visit": "Afternoon"
-                },
-                {
-                    "place_name": "West End Show",
-                    "place_details": "Experience a world-class theatrical performance.",
-                    "place_image_url": "https://example.com/westend.jpg",
-                    "geo_coordinates": {
-                        "lat": 51.5128,
-                        "lng": -0.1257
-                    },
-                    "place_address": "Various Theatres, London",
-                    "ticket_pricing": "£50-£150",
-                    "time_travel_each_location": "3 hours",
-                    "best_time_to_visit": "Evening"
-                }
-            ]
-        },
-        {
-            "day": 3,
-            "day_plan": "Explore modern London and enjoy panoramic views.",
-            "best_time_to_visit_day": "Morning",
-            "activities": [
-                {
-                    "place_name": "London Eye",
-                    "place_details": "Giant Ferris wheel offering stunning views of London.",
-                    "place_image_url": "https://example.com/londoneye.jpg",
-                    "geo_coordinates": {
-                        "lat": 51.5033,
-                        "lng": -0.1195
-                    },
-                    "place_address": "Riverside Building, County Hall, London SE1 7PB, United Kingdom",
-                    "ticket_pricing": "£32.50",
-                    "time_travel_each_location": "2 hours",
-                    "best_time_to_visit": "Morning (to avoid crowds)"
-                },
-                {
-                    "place_name": "Borough Market",
-                    "place_details": "Historic food market with a wide variety of artisan foods and drinks.",
-                    "place_image_url": "https://example.com/boroughmarket.jpg",
-                    "geo_coordinates": {
-                        "lat": 51.5054,
-                        "lng": -0.0909
-                    },
-                    "place_address": "8 Southwark Street, London SE1 1TL, United Kingdom",
-                    "ticket_pricing": "N/A (cost of food and drinks)",
-                    "time_travel_each_location": "2 hours",
-                    "best_time_to_visit": "Lunchtime"
-                },
-                {
-                    "place_name": "Sky Garden",
-                    "place_details": "Free public garden offering panoramic views of London.",
-                    "place_image_url": "https://example.com/skygarden.jpg",
-                    "geo_coordinates": {
-                        "lat": 51.5105,
-                        "lng": -0.0805
-                    },
-                    "place_address": "1 Sky Garden Walk, London EC3M 8AF, United Kingdom",
-                    "ticket_pricing": "Free (but requires booking in advance)",
-                    "time_travel_each_location": "2 hours",
-                    "best_time_to_visit": "Afternoon/Evening"
-                }
-            ]
-        }
-    ]
-*/}
-
+import { useQuery } from 'convex/react';
+import { api } from '@/convex/_generated/api';
+import { useContext } from 'react';
+import { UserDetailContext } from '@/context/UserDetailContext';
 
 function Itinerary({
     scrollContainer,
 }: {
     scrollContainer?: React.RefObject<HTMLDivElement | null>;
 }) {
+    const { userDetail } = useContext(UserDetailContext);
     const { tripDetailInfo, setTripDetailInfo } = useTripDetail();
     const [tripData, setTripData] = useState<TripInfo | null>(null);
+    const [selectedItem, setSelectedItem] = useState<ModalItem | null>(null);
 
-    useEffect(()=>{
-        tripDetailInfo&&setTripData(tripDetailInfo)
-    },[tripDetailInfo])
+    // Fetch Saved Places
+    const savedPlaces = useQuery(api.savedPlaces.GetSavedPlaces,
+        userDetail ? { userId: userDetail.email } : "skip"
+    );
 
-    const data = tripData?[
+    useEffect(() => {
+        if (tripDetailInfo) {
+            setTripData(tripDetailInfo);
+        } else {
+            setTripData(null);
+        }
+    }, [tripDetailInfo]);
+
+    const handleHotelSelect = (hotel: any, imageUrl: string, images: string[]) => {
+        setSelectedItem({
+            type: 'hotel',
+            title: hotel.hotel_name,
+            subtitle: hotel.hotel_address,
+            description: hotel.description,
+            imageUrl: imageUrl,
+            images: images && images.length > 0 ? images : [imageUrl],
+            context: "Recommended Hotel",
+            price: hotel.price_per_night,
+            rating: hotel.rating,
+            geoCoordinates: hotel.geo_coordinates
+        });
+    };
+
+    const handleActivitySelect = (activity: any, imageUrl: string, images: string[], context: string) => {
+        setSelectedItem({
+            type: 'activity',
+            title: activity.place_name,
+            subtitle: activity.place_address || activity.place_details,
+            description: activity.place_details,
+            imageUrl: imageUrl,
+            images: images && images.length > 0 ? images : [imageUrl],
+            context: context,
+            price: activity.ticket_pricing,
+            rating: 4.5,
+            duration: activity.time_travel_each_location,
+            bestTime: activity.best_time_to_visit,
+            geoCoordinates: typeof activity.geo_coordinates === 'string'
+                ? { lat: 0, lng: 0 }
+                : activity.geo_coordinates
+        });
+    };
+
+    const data = tripData ? [
         {
-            title: 'Recommended Hotels',
+            title: 'Hotels',
             content: (
-                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                <div className='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5'>
                     {tripData.hotels.map((hotel, index) => (
-                        <HotelCardItem key={index} hotel={hotel} />
+                        <HotelCardItem
+                            key={index}
+                            hotel={hotel}
+                            onSelect={(imageUrl, images) => handleHotelSelect(hotel, imageUrl, images)}
+                        />
                     ))}
                 </div>
             ),
@@ -223,28 +92,103 @@ function Itinerary({
         ...tripData?.itinerary.map((dayData) => ({
             title: `Day ${dayData?.day}`,
             content: (
-                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                <div className='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5'>
                     {dayData.activities.map((activity, index) => (
-                        <PlaceCardItem key={index} activity={activity} />
+                        <PlaceCardItem
+                            key={index}
+                            activity={activity}
+                            onSelect={(imageUrl, images) => handleActivitySelect(activity, imageUrl, images, `Day ${dayData.day}`)}
+                        />
                     ))}
                 </div>
             ),
         }))
-    ]:[];
+    ] : [];
+
+    // Extract valid days for the sidebar
+    const tripDays = tripData ? tripData.itinerary.map((d) => d.day) : [];
 
     return (
-        <div className="relative w-full overflow-hidden">
-            {tripData ? <Timeline
-                data={data}
-                scrollContainer={scrollContainer}
-                tripData={tripData}/>
-                :
-                <div>
-                    <h2 className='flex gap-2 text-3xl text-white items-center absolute bottom-40'><ArrowLeft/>Getting to know you to build perfect trip here...</h2>
-                    <Image src={"/beach.jpg"} alt='beach' width={"800"} height={"800"}
-                    className='w-full h-full object-cover rounded-3xl'/>
+        <div className={`relative w-full flex flex-col md:flex-row gap-6 ${!tripData ? 'h-full overflow-hidden' : ''}`}>
+            {tripData ? (
+                <>
+                    {/* Main Timeline Content */}
+                    <div className="flex-1">
+                        <Timeline
+                            data={data}
+                            scrollContainer={scrollContainer}
+                            tripData={tripData}
+                        />
+                    </div>
+
+                    {/* 4. Timeline Mini-Navigation (Floating) */}
+                    <div className="hidden xl:block w-32 relative">
+                        <div className="sticky top-24 flex flex-col gap-2 p-4 border-l border-gray-100 dark:border-zinc-800">
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Days</p>
+                            {tripDays.map((day) => (
+                                <button
+                                    key={day}
+                                    onClick={() => {
+                                        const el = document.getElementById(`day-${day}`);
+                                        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    }}
+                                    className="text-sm text-left text-gray-500 hover:text-primary transition-colors py-1 pl-2 border-l-2 border-transparent hover:border-primary"
+                                >
+                                    Day {day}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <TripItemModal
+                        isOpen={!!selectedItem}
+                        onClose={() => setSelectedItem(null)}
+                        item={selectedItem}
+                    />
+                </>
+            ) : (
+                <div className="w-full h-full p-4 md:p-10 overflow-hidden">
+                    {!tripData ? (
+                        <div className="flex flex-col gap-8 h-full">
+                            {/* Title only if saved places exist */}
+                            {savedPlaces && savedPlaces.length > 0 && (
+                                <h2 className='text-3xl font-bold font-display text-gray-800 dark:text-gray-100 flex items-center gap-3 shrink-0'>
+                                    <span className="bg-primary/20 p-2 rounded-full">✨</span>
+                                    Your Saved Places
+                                </h2>
+                            )}
+
+                            {/* Global 3D Map (Fills remaining space) */}
+                            <div className="flex-1 w-full min-h-0">
+                                <GlobalMap />
+                            </div>
+
+                            {/* Show Saved Places if they exist (Push map up if present) */}
+                            {savedPlaces && savedPlaces.length > 0 && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 shrink-0 max-h-[30%] overflow-y-auto">
+                                    {savedPlaces.map((place: any, index: number) => (
+                                        place.placeType === 'hotel' ? (
+                                            <HotelCardItem
+                                                key={index}
+                                                hotel={place.metadata}
+                                                onSelect={(imageUrl, images) => handleHotelSelect(place.metadata, imageUrl, images)}
+                                            />
+                                        ) : (
+                                            <PlaceCardItem
+                                                key={index}
+                                                activity={place.metadata}
+                                                onSelect={(imageUrl, images) => handleActivitySelect(place.metadata, imageUrl, images, "Saved Place")}
+                                            />
+                                        )
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Background decorative image if needed, but clean UI is better */}
+                        </div>
+                    ) : null}
                 </div>
-            }
+            )}
         </div>
     );
 }

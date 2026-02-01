@@ -43,3 +43,18 @@ export type TripInfo = {
     hotels: Hotel[];
     itinerary: Itinerary[];
 };
+
+export type ModalItem = {
+    type: 'hotel' | 'activity';
+    title: string;
+    subtitle: string;
+    description: string;
+    imageUrl: string;
+    price: string;
+    rating: string | number;
+    duration?: string;
+    bestTime?: string;
+    images?: string[]; // Array of images for carousel
+    context?: string; // e.g. "Day 3 • Afternoon"
+    geoCoordinates: { lat: number; lng: number } | string;
+};

@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 
 export const CreateTripDetail = mutation({
     args: {
@@ -15,5 +15,50 @@ export const CreateTripDetail = mutation({
         });
 
         return result;
+    },
+});
+
+
+export const GetUserTrips = query({
+    args: {
+        uid: v.id("UserTable")
+    },
+    handler: async (ctx, args) => {
+        const trips = await ctx.db.query("TripDetailTable")
+            .filter(q => q.eq(q.field("uid"), args.uid))
+            .collect();
+        return trips;
+    }
+})
+
+export const GetTrip = query({
+    args: {
+        tripId: v.string(),
+    },
+    handler: async (ctx, args) => {
+        const trip = await ctx.db.query("TripDetailTable")
+            .filter(q => q.eq(q.field("tripId"), args.tripId))
+            .first();
+        return trip;
+    },
+});
+
+export const UpdateTrip = mutation({
+    args: {
+        tripId: v.string(),
+        tripDetail: v.any()
+    },
+    handler: async (ctx, args) => {
+        const trip = await ctx.db.query("TripDetailTable")
+            .filter(q => q.eq(q.field("tripId"), args.tripId))
+            .first();
+
+        if (!trip) {
+            throw new Error("Trip not found to update");
+        }
+
+        await ctx.db.patch(trip._id, {
+            tripDetail: args.tripDetail
+        });
     },
 });
