@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import ChatBox from './_components/ChatBox';
+import ChatBoxWrapper from './_components/ChatBoxWrapper';
 import { GripVertical, Map, List, Globe2 } from 'lucide-react';
 import Itinerary from './_components/Itinerary';
 import GlobalMap from './_components/GlobalMap';
@@ -60,7 +60,7 @@ function CreateNewTrip() {
                 style={{ '--left-width': `${leftPanelWidth}%` } as React.CSSProperties}
             >
                 <div className="h-full w-full">
-                    <ChatBox />
+                    <ChatBoxWrapper />
                 </div>
             </div>
 
