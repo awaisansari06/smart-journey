@@ -6,7 +6,7 @@ import type { Hotel } from "./types";
 
 type Props = {
     hotel: Hotel;
-    onSelect: (image: string, images: string[]) => void;
+    onSelect?: (image: string, images: string[]) => void;
 };
 
 function HotelCardItem({ hotel, onSelect }: Props) {
@@ -45,7 +45,7 @@ function HotelCardItem({ hotel, onSelect }: Props) {
 
     return (
         <div
-            onClick={() => onSelect(imageSrc, photoUrls.length > 0 ? photoUrls : [imageSrc])}
+            onClick={() => onSelect?.(imageSrc, photoUrls.length > 0 ? photoUrls : [imageSrc])}
             className="hover:scale-[1.02] transition-all cursor-pointer border rounded-xl shadow-sm bg-white overflow-hidden group"
         >
             <div className="relative h-[180px] w-full">
