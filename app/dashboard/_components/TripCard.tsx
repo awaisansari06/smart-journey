@@ -32,7 +32,7 @@ function TripCard({ trip }: { trip: any }) {
                 setPhotoUrl(result.data[0]);
             }
         } catch (e) {
-            console.log("Error fetching place photo", e);
+            // Silently fail - use fallback image
         } finally {
             setLoadingImage(false);
         }

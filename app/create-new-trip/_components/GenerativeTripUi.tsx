@@ -52,7 +52,7 @@ function GenerativeTripUi({ tripData, onGenerate, onEdit, loading }: GenerativeT
                 </Button>
                 <Button
                     variant="default"
-                    className="flex-1 gap-2 bg-linear-to-r from-blue-600 to-violet-600 text-white hover:from-blue-700 hover:to-violet-700 border-none"
+                    className="flex-1 gap-2 bg-linear-to-r from-orange-500 to-pink-600 text-white hover:from-orange-600 hover:to-pink-700 border-none"
                     onClick={onGenerate}
                     disabled={loading}
                 >

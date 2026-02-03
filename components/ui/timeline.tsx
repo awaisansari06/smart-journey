@@ -44,18 +44,18 @@ export const Timeline = ({ data, scrollContainer, tripData }: { data: TimelineEn
         <h2 className="text-lg md:text-4xl mb-4 text-black dark:text-white max-w-4xl">
           Your Trip Itinerary from <strong className="text-primary">{tripData?.origin}</strong> to <strong className="text-primary">{tripData?.destination}</strong> is Ready
         </h2>
-        <div className="flex gap-5 items-center">
+        <div className="flex flex-wrap gap-3 md:gap-5 items-center text-sm md:text-base">
           <div className="flex items-center gap-2">
-            <Calendar />
-            <h2>{tripData?.duration}</h2>
+            <Calendar className="w-4 h-4 md:w-5 md:h-5" />
+            <h2 className="text-sm md:text-xl font-semibold">{tripData?.duration}</h2>
           </div>
           <div className="flex items-center gap-2">
-            <Wallet2 />
-            <h2>{tripData?.budget}</h2>
+            <Wallet2 className="w-4 h-4 md:w-5 md:h-5" />
+            <h2 className="text-sm md:text-xl font-semibold">{tripData?.budget}</h2>
           </div>
           <div className="flex items-center gap-2">
-            <Users />
-            <h2>{tripData?.group_size}</h2>
+            <Users className="w-4 h-4 md:w-5 md:h-5" />
+            <h2 className="text-sm md:text-xl font-semibold">{tripData?.group_size}</h2>
           </div>
         </div>
       </div>
@@ -97,7 +97,7 @@ export const Timeline = ({ data, scrollContainer, tripData }: { data: TimelineEn
               height: heightTransform,
               opacity: opacityTransform,
             }}
-            className="absolute inset-x-0 top-0  w-[2px] bg-gradient-to-t from-purple-500 via-blue-500 to-transparent from-[0%] via-[10%] rounded-full"
+            className="absolute inset-x-0 top-0  w-[2px] bg-gradient-to-t from-pink-600 via-orange-500 to-transparent from-[0%] via-[10%] rounded-full"
           />
         </div>
       </div>

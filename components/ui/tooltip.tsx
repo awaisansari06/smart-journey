@@ -15,8 +15,7 @@ const Tooltip = ({ children }: { children: React.ReactNode }) => {
         >
             {React.Children.map(children, (child) => {
                 if (React.isValidElement(child)) {
-                    // @ts-ignore
-                    return React.cloneElement(child, { open })
+                    return React.cloneElement(child as React.ReactElement<{ open?: boolean }>, { open })
                 }
                 return child
             })}

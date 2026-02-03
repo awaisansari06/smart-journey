@@ -33,7 +33,7 @@ function PlaceCardItem({ activity, onSelect }: Props) {
                 setPhotoUrls([data]);
             }
         } catch (err) {
-            console.log("Google place detail error:", err);
+            // Silently fail - use fallback image
         }
     };
 

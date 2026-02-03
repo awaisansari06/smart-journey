@@ -73,13 +73,15 @@ function ChatBox() {
     const [isFinal, setIsFinal] = useState(false);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const messagesContainerRef = useRef<HTMLDivElement>(null);
     const initialized = useRef(false);
 
     // Sync Messages from DB
     useEffect(() => {
-        if (dbMessages) {
-            // @ts-ignore
-            setMessages(dbMessages);
+        // Only sync from DB if we haven't initialized from a query
+        // This prevents overwriting the user's first message from the landing page
+        if (dbMessages && !initialized.current) {
+            setMessages(dbMessages as Message[]);
         }
     }, [dbMessages]);
 
@@ -102,10 +104,13 @@ function ChatBox() {
         }
     }, [dbTrip, dbMessages]);
 
-    // Auto-scroll to bottom
+    // Auto-scroll to bottom (only within chat container, not entire page)
     const scrollToBottom = () => {
         setTimeout(() => {
-            messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+            if (messagesContainerRef.current) {
+                // Use scrollTop instead of scrollIntoView to prevent page scroll on mobile
+                messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+            }
         }, 100);
     };
 
@@ -247,7 +252,7 @@ function ChatBox() {
 
     const handleDeleteTrip = () => {
         if (confirm("Are you sure you want to delete this trip?")) {
-            console.log("Trip deleted");
+            // Navigate to home after deletion
             router.push('/');
         }
         setIsMenuOpen(false);
@@ -258,13 +263,13 @@ function ChatBox() {
 
             {/* TASK 2: Chat Header */}
             <div className='flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800 bg-white/80 dark:bg-black/80 backdrop-blur-md sticky top-0 z-10'>
-                <div className='flex items-center gap-3'>
-                    <div className='w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center'>
+                <div className='flex items-center gap-3 min-w-0'>
+                    <div className='w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center shrink-0'>
                         <Bot className='w-6 h-6 text-primary' />
                     </div>
-                    <div>
-                        <h2 className='font-bold text-gray-800 dark:text-gray-100'>SmartJourney Assistant</h2>
-                        <p className='text-xs text-gray-500'>Ask me to plan your trip ✈️</p>
+                    <div className='min-w-0'>
+                        <h2 className='text-lg font-bold text-gray-800 dark:text-gray-100 truncate'>SmartJourney Assistant</h2>
+                        <p className='text-xs text-gray-500 truncate'>Ask me to plan your trip ✈️</p>
                     </div>
                 </div>
 
@@ -298,7 +303,7 @@ function ChatBox() {
             </div>
 
             {/* TASK 3: Chat Messages */}
-            <div className='flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth'>
+            <div ref={messagesContainerRef} className='flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth'>
                 {messages.length === 0 && !loading && (
                     <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-4 opacity-100">
                         {tripData?.locationInfo ? (
@@ -336,17 +341,17 @@ function ChatBox() {
                     <div key={index} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
                         <div
                             className={`
-                                max-w-[75%] px-5 py-3 rounded-2xl text-sm leading-relaxed shadow-sm
+                                max-w-[75%] px-5 py-3 text-sm leading-relaxed
                                 ${msg.role === 'user'
-                                    ? 'bg-blue-600 text-white rounded-br-none'
-                                    : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-bl-none border border-gray-200 dark:border-gray-700'
+                                    ? 'bg-gradient-to-r from-orange-500 to-pink-600 text-white rounded-2xl rounded-br-sm shadow-lg shadow-orange-200/40 dark:shadow-orange-900/40'
+                                    : 'bg-white/80 dark:bg-gray-800/80 backdrop-blur-md text-gray-800 dark:text-gray-200 rounded-2xl rounded-bl-sm border border-gray-200 dark:border-gray-700 shadow-sm'
                                 }
                             `}
                         >
                             {msg.content}
                         </div>
                         {msg.timestamp && (
-                            <span className="text-[10px] text-gray-400 mt-1 px-1">
+                            <span className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 px-1">
                                 {msg.timestamp}
                             </span>
                         )}
