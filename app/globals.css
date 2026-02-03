@@ -182,6 +182,7 @@
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   * {
@@ -190,5 +191,44 @@
 
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+    letter-spacing: -0.011em;
+  }
+
+  /* Headings */
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  h1 {
+    @apply text-4xl md:text-5xl lg:text-6xl;
+    font-weight: 800;
+  }
+
+  h2 {
+    @apply text-3xl md:text-4xl lg:text-5xl;
+  }
+
+  h3 {
+    @apply text-2xl md:text-3xl;
+  }
+
+  /* Paragraphs */
+  p {
+    line-height: 1.7;
+    letter-spacing: -0.011em;
+  }
+
+  /* Small text */
+  small {
+    font-size: 0.875em;
+    letter-spacing: -0.006em;
+  }
+
+  /* Strong emphasis */
+  strong, b {
+    font-weight: 600;
   }
 }

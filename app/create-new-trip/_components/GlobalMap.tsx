@@ -136,18 +136,21 @@ export default function GlobalMap() {
         map.on("wheel", stopSpin);
         map.on("touchstart", stopSpin);
 
+        // Disable auto-rotation on mobile for better performance
+        const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+
         const spin = () => {
-            if (!mapRef.current || isUserInteracting.current) return;
+            if (!mapRef.current || isUserInteracting.current || isMobile) return;
             if (map.getZoom() > 4) return;
             const center = map.getCenter();
             center.lng -= 0.03;
             map.easeTo({ center, duration: 1000, easing: (n) => n });
         };
 
-        const timer = setInterval(spin, 120);
+        const timer = isMobile ? null : setInterval(spin, 120);
 
         return () => {
-            clearInterval(timer);
+            if (timer) clearInterval(timer);
             map.remove();
             mapRef.current = null;
         };
@@ -195,6 +198,25 @@ export default function GlobalMap() {
             const source = map.getSource("trip-points") as mapboxgl.GeoJSONSource;
             if (source) {
                 source.setData({ type: "FeatureCollection", features });
+
+                // Auto-zoom to fit all filtered locations
+                if (features.length > 0 && filter !== 'all') {
+                    // Stop auto-rotation when zooming to specific filter
+                    isUserInteracting.current = true;
+
+                    // Calculate bounds from all features
+                    const bounds = new mapboxgl.LngLatBounds();
+                    features.forEach((feature) => {
+                        bounds.extend(feature.geometry.coordinates as [number, number]);
+                    });
+
+                    // Fit map to bounds with padding
+                    map.fitBounds(bounds, {
+                        padding: { top: 100, bottom: 100, left: 100, right: 100 },
+                        maxZoom: 12,
+                        duration: 1500
+                    });
+                }
             }
         };
 
@@ -229,7 +251,7 @@ export default function GlobalMap() {
     }
 
     return (
-        <div className="relative w-full h-full min-h-[500px] rounded-2xl overflow-hidden bg-[#0b0b19] shadow-xl">
+        <div className="relative w-full h-full min-h-[250px] lg:min-h-[500px] rounded-2xl overflow-hidden bg-[#0b0b19] shadow-xl">
             {/* MAP CONTAINER */}
             <div
                 ref={mapContainer}
@@ -242,8 +264,8 @@ export default function GlobalMap() {
 
                 {/* SEARCH BAR & CHIPS ROW */}
                 <div className="flex flex-wrap items-start gap-3 pointer-events-auto">
-                    {/* Geocoder Component */}
-                    <div className="w-full max-w-[300px] shadow-lg rounded-lg overflow-hidden border border-white/20">
+                    {/* Geocoder Component - Hidden on Mobile */}
+                    <div className="hidden lg:block w-full max-w-[300px] shadow-lg rounded-lg overflow-hidden border border-white/20">
                         <Geocoder
                             accessToken={MAPBOX_TOKEN}
                             options={{
@@ -263,7 +285,7 @@ export default function GlobalMap() {
                     </div>
 
                     {/* Filter Chips */}
-                    <div className="flex gap-2 pt-1.5">
+                    <div className="flex flex-wrap gap-2 pt-0 lg:pt-1.5">
                         <button
                             onClick={() => setFilter('all')}
                             className={`px-4 py-2 rounded-full text-xs font-bold shadow-md transition-all ${filter === 'all' ? 'bg-white text-black' : 'bg-black/50 text-white backdrop-blur-md hover:bg-black/70'}`}

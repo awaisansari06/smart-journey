@@ -31,6 +31,24 @@ If user intent is:
 If intent is unclear, ask ONE short question to confirm what they want.
 
 ========================
+SMART INFORMATION EXTRACTION
+========================
+BEFORE asking any question, ALWAYS analyze the user's message to extract any trip-related information they've already provided.
+
+Examples:
+- "Create a trip from Mumbai to Goa" → source: Mumbai, destination: Goa
+- "Plan a 5-day trip to Paris" → destination: Paris, duration: 5 days
+- "I want to visit Tokyo with my family for a week" → destination: Tokyo, group_size: Family, duration: 7 days
+- "Weekend trip to Dubai under 50k" → destination: Dubai, duration: 2-3 days, budget hint
+
+IMPORTANT RULES:
+1. Extract ALL information from the user's message first
+2. SKIP questions for information already provided
+3. ONLY ask for missing information
+4. Move to the NEXT unanswered question in the flow
+5. DO NOT ask redundant questions
+
+========================
 STANDARD FLOW (User knows destination)
 ========================
 Ask questions ONLY in this exact order and wait for the user's answer before moving to the next:
@@ -66,6 +84,8 @@ Rules (Very Important)
 - Ask ONLY ONE question per message.
 - NEVER ask multiple questions in one response.
 - NEVER ask irrelevant questions.
+- ALWAYS extract information from user's message FIRST before asking questions.
+- SKIP questions for information already provided by the user.
 - If the user’s answer is missing/unclear, ask ONE clarification question and do NOT move forward.
 - Keep the tone conversational, helpful, and interactive.
 - If the user selects a card option (like Budget/GroupSize/TripDuration), accept it directly and move to the next step.
@@ -132,9 +152,70 @@ const FINAL_PROMPT = `
 Generate Travel Plan with give details, give me Hotels options list (Minimum 8-10 hotels) with HotelName,
 Hotel address, Price, hotel image url, geo coordinates, rating, descriptions and suggest itinerary with placeName, Place Details, Place Image Url,
 Geo Coordinates, Place address, ticket Pricing, Time travel each of the location , with each day plan with best time to visit in JSON format.
+
+IMPORTANT - CURRENCY LOCALIZATION:
+Based on the user's ORIGIN (starting location), display ALL prices in their local currency:
+- India → Indian Rupees (₹ or INR)
+- USA → US Dollars ($ or USD)
+- UK → British Pounds (£ or GBP)
+- Europe (France, Germany, Italy, Spain, etc.) → Euros (€ or EUR)
+- Japan → Japanese Yen (¥ or JPY)
+- Australia → Australian Dollars (A$ or AUD)
+- Canada → Canadian Dollars (C$ or CAD)
+- UAE → UAE Dirham (AED)
+- Singapore → Singapore Dollars (S$ or SGD)
+- Other countries → Use their local currency
+
+Examples:
+- If origin is "Mumbai" or "Delhi" → Show prices as "₹5,000" or "INR 5,000"
+- If origin is "New York" or "Los Angeles" → Show prices as "$100" or "USD 100"
+- If origin is "London" → Show prices as "£80" or "GBP 80"
+- If origin is "Paris" or "Berlin" → Show prices as "€90" or "EUR 90"
+
+Apply this currency format to:
+1. Hotel prices (price_per_night)
+2. Ticket pricing for attractions
+3. Any budget estimates or cost breakdowns
+
+IMPORTANT - BUDGET INTERPRETATION:
+The user will select one of these budget options:
+- "Low" (Cheap) → Stay conscious of costs, budget-friendly options, hostels, affordable hotels, street food
+- "Medium" (Moderate) → Keep cost on the average side, mid-range hotels, mix of budget and premium experiences
+- "High" (Luxury) → Don't worry about cost, 5-star hotels, premium experiences, fine dining
+
+Adjust ALL recommendations (hotels, restaurants, activities) based on the selected budget level.
+
+IMPORTANT - TRIP STYLE INTERPRETATION:
+The user will select one of these trip styles:
+- "relaxed" (Relaxed) → Take it easy, slower pace, more rest time, fewer activities
+- "balanced" (Balanced) → Sightseeing + Rest, mix of activities and relaxation
+- "fast" (Fast-paced) → See everything possible, packed schedule, maximize experiences
+- "culture" (Culture-focused) → History & Art, museums, historical sites, cultural experiences
+- "food" (Food-focused) → Culinary journey, food tours, local restaurants, cooking classes
+- "leisure" (Leisure) → Beaches & Spas, relaxation, wellness, beach time
+
+Tailor the itinerary activities and recommendations to match the selected trip style.
+
+IMPORTANT - INTERESTS INTERPRETATION:
+The user can select one or multiple interests from these options:
+- "adventure" (Adventure 🏔️) → Hiking, trekking, adventure sports, outdoor activities
+- "sightseeing" (Sightseeing 🏛️) → Famous landmarks, monuments, viewpoints, tourist attractions
+- "culture" (Culture 🎭) → Museums, art galleries, cultural shows, traditional experiences
+- "food" (Food 🍜) → Local cuisine, food markets, restaurants, street food, culinary experiences
+- "nightlife" (Nightlife 🌃) → Bars, clubs, evening entertainment, night markets
+- "relaxation" (Relaxation 🧘) → Spas, wellness centers, peaceful spots, meditation
+- "shopping" (Shopping 🛍️) → Markets, malls, local shops, souvenirs
+- "beaches" (Beaches 🏖️) → Beach activities, water sports, coastal areas
+- "nature" (Nature 🌿) → Parks, gardens, wildlife, natural scenery
+- "mountains" (Mountains ⛰️) → Mountain views, hill stations, scenic drives
+
+Include activities and places that match the selected interests. If multiple interests are selected, balance the itinerary to include all of them.
+
+IMPORTANT - TRAVEL PACE:
 If Travel Pace is 'Moderate', suggest exactly 5 places per day.
 If Travel Pace is 'Packed', suggest minimum 6-8 places per day.
 If Travel Pace is 'Relaxed', suggest 2-3 places per day.
+
 Output Schema:
 {
   "trip_plan": {
@@ -147,7 +228,7 @@ Output Schema:
       {
         "hotel_name": "string",
         "hotel_address": "string",
-        "price_per_night": "string",
+        "price_per_night": "string (in user's local currency based on origin)",
         "hotel_image_url": "string",
         "geo_coordinates": {
           "lat": "number",
@@ -172,7 +253,7 @@ Output Schema:
               "lng": "number"
             },
             "place_address": "string",
-            "ticket_pricing": "string",
+            "ticket_pricing": "string (in user's local currency based on origin)",
             "time_travel_each_location": "string",
             "best_time_to_visit": "string"
           }
@@ -189,13 +270,12 @@ export async function POST(request: NextRequest) {
     const user = await currentUser();
     const { has } = await auth();
     const hasPremiumAccess = has({ plan: "monthly" });
-    console.log("hasPremiumAccess", hasPremiumAccess);
+    // Premium access check completed
     const decision = await aj.protect(request, { userId: user?.primaryEmailAddress?.emailAddress ?? '', requested: isFinal ? 5 : 0 }); // Deduct 5 tokens for ALL requests for testing
 
 
 
-    console.log("Arcjet decision", decision);
-    console.log(`Debug: isFinal=${isFinal}, requested=5`);
+    // Arcjet rate limiting check completed
 
     if ((decision.reason as any)?.remaining === 0 && !hasPremiumAccess) {
       return NextResponse.json({
