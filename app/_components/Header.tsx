@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import GradientButton from '@/components/ui/gradient-button';
 import { UserButton, SignedIn, SignedOut, SignInButton, SignUpButton, SignOutButton } from "@clerk/nextjs";
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Menu, X, Home, DollarSign, Mail, LayoutDashboard, Plane, LogOut } from 'lucide-react';
 
 const menuOptions = [
@@ -32,6 +32,7 @@ const menuOptions = [
 function Header() {
   const { user } = useUser();
   const pathname = usePathname();
+  const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -116,13 +117,9 @@ function Header() {
           {/* DESKTOP: Action Buttons (≥md) */}
           <div className="hidden md:flex gap-2 items-center">
             <SignedIn>
-              <Link href={'/dashboard'}>
-                <GradientButton variant="outline">Dashboard</GradientButton>
-              </Link>
+              <GradientButton variant="outline" onClick={() => router.push('/dashboard')}>Dashboard</GradientButton>
               {pathname !== '/create-new-trip' &&
-                <Link href={'/create-new-trip'}>
-                  <GradientButton>Create New Trip</GradientButton>
-                </Link>
+                <GradientButton onClick={() => router.push('/create-new-trip')}>Create New Trip</GradientButton>
               }
               <UserButton />
             </SignedIn>
@@ -297,18 +294,18 @@ function Header() {
                 <SignedOut>
                   <div className="space-y-2.5">
                     <SignUpButton mode="modal">
-                      <button className="w-full" onClick={closeMobileMenu}>
+                      <div className="w-full" onClick={closeMobileMenu}>
                         <GradientButton className="w-full h-12 text-[15px] font-semibold shadow-xl shadow-orange-500/30 hover:shadow-2xl hover:shadow-orange-500/40 transition-all duration-300">
                           Sign Up
                         </GradientButton>
-                      </button>
+                      </div>
                     </SignUpButton>
                     <SignInButton mode="modal">
-                      <button className="w-full" onClick={closeMobileMenu}>
+                      <div className="w-full" onClick={closeMobileMenu}>
                         <GradientButton variant="outline" className="w-full h-12 text-[15px] font-medium hover:scale-[1.02] active:scale-[0.98] transition-transform">
                           Sign In
                         </GradientButton>
-                      </button>
+                      </div>
                     </SignInButton>
                   </div>
                 </SignedOut>

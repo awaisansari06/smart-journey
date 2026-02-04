@@ -19,8 +19,10 @@ import { UserDetailContext } from '@/context/UserDetailContext';
 
 function Itinerary({
     scrollContainer,
+    onTripReady
 }: {
     scrollContainer?: React.RefObject<HTMLDivElement | null>;
+    onTripReady?: (isReady: boolean) => void;
 }) {
     const { userDetail } = useContext(UserDetailContext);
     const { tripDetailInfo, setTripDetailInfo } = useTripDetail();
@@ -35,10 +37,12 @@ function Itinerary({
     useEffect(() => {
         if (tripDetailInfo) {
             setTripData(tripDetailInfo);
+            onTripReady?.(true);
         } else {
             setTripData(null);
+            onTripReady?.(false);
         }
-    }, [tripDetailInfo]);
+    }, [tripDetailInfo, onTripReady]);
 
     const handleHotelSelect = (hotel: any, imageUrl: string, images: string[]) => {
         setSelectedItem({
@@ -51,7 +55,8 @@ function Itinerary({
             context: "Recommended Hotel",
             price: hotel.price_per_night,
             rating: hotel.rating,
-            geoCoordinates: hotel.geo_coordinates
+            geoCoordinates: hotel.geo_coordinates,
+            countryName: tripData?.destination
         });
     };
 
@@ -70,7 +75,8 @@ function Itinerary({
             bestTime: activity.best_time_to_visit,
             geoCoordinates: typeof activity.geo_coordinates === 'string'
                 ? { lat: 0, lng: 0 }
-                : activity.geo_coordinates
+                : activity.geo_coordinates,
+            countryName: tripData?.destination
         });
     };
 
@@ -147,44 +153,13 @@ function Itinerary({
                     />
                 </>
             ) : (
-                <div className="w-full h-full p-4 md:p-10 overflow-hidden">
+                <div className="w-full h-full p-4 md:px-10 md:pb-10 md:pt-14 overflow-hidden">
                     {!tripData ? (
                         <div className="flex flex-col gap-8 h-full">
-                            {/* Title only if saved places exist */}
-                            {savedPlaces && savedPlaces.length > 0 && (
-                                <h2 className='text-3xl font-bold font-display text-gray-800 dark:text-gray-100 flex items-center gap-3 shrink-0'>
-                                    <span className="bg-primary/20 p-2 rounded-full">✨</span>
-                                    Your Saved Places
-                                </h2>
-                            )}
-
                             {/* Global 3D Map (Fills remaining space) */}
                             <div className="flex-1 w-full min-h-0">
                                 <GlobalMap />
                             </div>
-
-                            {/* Show Saved Places if they exist (Push map up if present) */}
-                            {savedPlaces && savedPlaces.length > 0 && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 shrink-0 max-h-[30%] overflow-y-auto">
-                                    {savedPlaces.map((place: any, index: number) => (
-                                        place.placeType === 'hotel' ? (
-                                            <HotelCardItem
-                                                key={index}
-                                                hotel={place.metadata}
-                                                onSelect={(imageUrl, images) => handleHotelSelect(place.metadata, imageUrl, images)}
-                                            />
-                                        ) : (
-                                            <PlaceCardItem
-                                                key={index}
-                                                activity={place.metadata}
-                                                onSelect={(imageUrl, images) => handleActivitySelect(place.metadata, imageUrl, images, "Saved Place")}
-                                            />
-                                        )
-                                    ))}
-                                </div>
-                            )}
-
-                            {/* Background decorative image if needed, but clean UI is better */}
                         </div>
                     ) : null}
                 </div>

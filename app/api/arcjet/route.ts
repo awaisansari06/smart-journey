@@ -1,24 +1,40 @@
 import arcjet, { tokenBucket } from "@arcjet/next";
 import { NextResponse } from "next/server";
 
-export const aj = arcjet({
-  key: process.env.ARCJET_KEY!, // Get your site key from https://app.arcjet.com
+// Free users: 2 credits
+export const ajFree = arcjet({
+  key: process.env.ARCJET_KEY!,
   rules: [
-    // Create a token bucket rate limit. Other algorithms are supported.
     tokenBucket({
-      mode: "LIVE", // will block requests. Use "DRY_RUN" to log only
-      characteristics: ["userId"], // track requests by a custom user ID
-      refillRate: 5, // refill 5 tokens per interval
-      interval: 86400, // refill every 10 seconds
-      capacity: 5, // bucket maximum capacity of 10 tokens
+      mode: "LIVE",
+      characteristics: ["userId"],
+      refillRate: 1, // No automatic refills
+      interval: 86400, // 24 hours
+      capacity: 2, // 2 trips for free users
     }),
   ],
 });
 
+// Premium users: 100 credits
+export const ajPremium = arcjet({
+  key: process.env.ARCJET_KEY!,
+  rules: [
+    tokenBucket({
+      mode: "LIVE",
+      characteristics: ["userId"],
+      refillRate: 1, // No automatic refills
+      interval: 86400, // 24 hours
+      capacity: 100, // 100 trips for premium users
+    }),
+  ],
+});
+
+// Legacy export for backward compatibility (defaults to free)
+export const aj = ajFree;
+
 export async function GET(req: Request) {
-  const userId = "user123"; // Replace with your authenticated user ID
-  const decision = await aj.protect(req, { userId, requested: 5 }); // Deduct 5 tokens from the bucket
-  // Arcjet rate limiting check completed
+  const userId = "user123";
+  const decision = await ajFree.protect(req, { userId, requested: 5 });
 
   if (decision.isDenied()) {
     return NextResponse.json(

@@ -196,7 +196,12 @@
   }
 
   /* Headings */
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-weight: 700;
     letter-spacing: -0.02em;
     line-height: 1.2;
@@ -228,7 +233,49 @@
   }
 
   /* Strong emphasis */
-  strong, b {
+  strong,
+  b {
     font-weight: 600;
+  }
+}
+
+/* 🖨️ PRINT STYLES - Native Browser Print */
+@media print {
+
+  /* Hide UI elements */
+  header,
+  aside,
+  .no-print,
+  button,
+  .glass-button,
+  .chat-interface,
+  /* Assuming chat wrapper has a class or we target layout */
+  [role="dialog"] {
+    display: none !important;
+  }
+
+  /* Reset layout for print */
+  body,
+  html {
+    background: white !important;
+    color: black !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* Itinerary Container */
+  .itinerary-container {
+    /* We need to add this class to the scrollContainer in page.tsx */
+    position: static !important;
+    overflow: visible !important;
+    height: auto !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Ensure cards don't break awkwardly */
+  .break-inside-avoid {
+    break-inside: avoid;
   }
 }
