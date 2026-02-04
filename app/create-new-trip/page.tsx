@@ -5,7 +5,6 @@ import ChatBoxWrapper from './_components/ChatBoxWrapper';
 import { GripVertical, Map, List, Globe2, Download } from 'lucide-react';
 import Itinerary from './_components/Itinerary';
 import GlobalMap from './_components/GlobalMap';
-import { downloadPdf } from '@/utils/downloadPdf';
 
 function CreateNewTrip() {
     const [leftPanelWidth, setLeftPanelWidth] = useState(35);
