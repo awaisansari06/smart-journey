@@ -76,31 +76,36 @@ function UserTrips() {
     }
 
     return (
-        <div>
+        <div className='p-6 rounded-2xl bg-white/40 border border-white/40 shadow-sm backdrop-blur-sm transition-all'>
             {/* Stats Header */}
-            <div className='mb-6'>
-                <h2 className='text-xl font-bold text-gray-800 dark:text-white mb-4'>My Trips</h2>
-                <StatsOverview totalTrips={trips.length} user={userDetail} />
+            <div className="flex flex-col md:flex-row items-center justify-between mb-6">
+                <div>
+                    <h2 className='text-xl font-bold text-gray-800 dark:text-white'>My Trips</h2>
+                    <p className="text-sm text-gray-500">Manage and view your planned itineraries</p>
+                </div>
+                <div className="mt-4 md:mt-0">
+                    <StatsOverview totalTrips={trips.length} user={userDetail} />
+                </div>
             </div>
 
             {/* Controls Bar */}
-            <div className='flex flex-col md:flex-row gap-4 mb-6 justify-between items-center'>
+            <div className='flex flex-col md:flex-row gap-4 mb-6 justify-between items-center bg-white/50 dark:bg-zinc-900/50 p-3 rounded-xl border border-white/40'>
                 <div className='relative w-full md:w-72'>
                     <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400' />
                     <Input
                         placeholder="Search destination..."
-                        className='pl-10 bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-800'
+                        className='pl-10 bg-transparent border-0 focus-visible:ring-0 placeholder:text-gray-400'
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
                 </div>
 
-                <div className='flex gap-2 w-full md:w-auto'>
+                <div className='flex gap-2 w-full md:w-auto border-t md:border-t-0 md:border-l border-gray-200 dark:border-zinc-700 pt-3 md:pt-0 md:pl-3'>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline" className='gap-2 w-1/2 md:w-auto bg-white dark:bg-zinc-900'>
+                            <Button variant="ghost" className='gap-2 w-full md:w-auto md:h-9 text-gray-600 dark:text-gray-300'>
                                 <ArrowUpDown className="w-4 h-4" />
-                                {sortOrder === 'newest' ? 'Newest First' : 'Oldest First'}
+                                <span className="text-sm">{sortOrder === 'newest' ? 'Newest' : 'Oldest'}</span>
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">

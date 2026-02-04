@@ -8,6 +8,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import React, { useEffect, useState, useRef } from 'react';
 import UiRenderer from './UiRenderer';
 import EditTripDialog from './EditTripDialog';
+import CreditDisplay from './CreditDisplay';
 import { TripInfo } from './types';
 import { useMutation, useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
@@ -71,6 +72,7 @@ function ChatBox() {
     const { setTripDetailInfo } = useTripDetail();
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isFinal, setIsFinal] = useState(false);
+    const [refreshCredits, setRefreshCredits] = useState(0); // Trigger for credit refresh
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -172,6 +174,15 @@ function ChatBox() {
 
         setMessages((prev) => [...prev, newMessage]);
 
+        if (sessionId) {
+            await saveMessage({
+                tripId: sessionId,
+                role: "user",
+                content: textToUse,
+                timestamp: newMessage.timestamp
+            });
+        }
+
         try {
             const result = await axios.post("/api/aimodel", {
                 messages: [...messages, { role: "user", content: textToUse }],
@@ -187,47 +198,145 @@ function ChatBox() {
                 setTripDetailInfo(tripPlan);
 
                 // Save to DB (Convex)
-                if (userDetail) {
+                if (userDetail && userDetail._id) {
                     const tripId = uuidv4();
-                    const docId = await createTripDetail({
-                        tripId: tripId,
-                        uid: userDetail._id,
-                        tripDetail: tripPlan
-                    });
+                    try {
+                        await createTripDetail({
+                            tripId: tripId,
+                            uid: userDetail._id,
+                            tripDetail: tripPlan
+                        });
 
-                    setMessages((prev) => [...prev, {
-                        role: "assistant",
-                        content: "Your trip is generated.",
-                        timestamp: getCurrentTime()
-                    }]);
+                        const successMsg = "Your trip is generated.";
+                        setMessages((prev) => [...prev, {
+                            role: "assistant",
+                            content: successMsg,
+                            timestamp: getCurrentTime()
+                        }]);
+
+                        if (sessionId) {
+                            await saveMessage({
+                                tripId: sessionId,
+                                role: "assistant",
+                                content: successMsg,
+                                timestamp: getCurrentTime()
+                            });
+                        }
+
+                        // Refresh credit display
+                        setRefreshCredits(prev => prev + 1);
+                    } catch (dbError) {
+                        console.error("Failed to save trip to Convex:", dbError);
+                    }
                 } else {
-                    // Show final message if not logged in
+                    // Not logged in handling...
+                    const msgContent = "I've generated your complete travel plan! Please login to save this trip.";
                     setMessages((prev) => [...prev, {
                         role: "assistant",
-                        content: "I've generated your complete travel plan! Please login to save this trip.",
+                        content: msgContent,
                         ui: "tripResult",
                         timestamp: getCurrentTime()
                     }]);
+                    // Don't save this message as we don't have a user session? 
+                    // Actually we have sessionId (tripId). We can save it.
+                    if (sessionId) {
+                        await saveMessage({
+                            tripId: sessionId,
+                            role: "assistant",
+                            content: msgContent,
+                            ui: "tripResult",
+                            timestamp: getCurrentTime()
+                        });
+                    }
                 }
 
                 setIsFinal(false);
-            } else {
-                // Handle Normal Response
+            } else if (result.data.ui === "limit") {
+                const limitMsg = "🎯 You've used your 2 free trips! Upgrade to premium for unlimited trip planning. Visit our pricing page to continue.";
                 setMessages((prev) => [...prev, {
                     role: "assistant",
-                    content: result.data.resp,
-                    ui: result.data.ui, // Capture UI type from API response
+                    content: limitMsg,
                     timestamp: getCurrentTime()
                 }]);
+
+                if (sessionId) {
+                    await saveMessage({
+                        tripId: sessionId,
+                        role: "assistant",
+                        content: limitMsg,
+                        timestamp: getCurrentTime()
+                    });
+                }
+                setIsFinal(false);
+            } else {
+                // Handle Normal Response
+                const aiContent = result.data.resp;
+                const aiUi = result.data.ui;
+
+                setMessages((prev) => [...prev, {
+                    role: "assistant",
+                    content: aiContent,
+                    ui: aiUi,
+                    timestamp: getCurrentTime()
+                }]);
+
+                if (sessionId) {
+                    await saveMessage({
+                        tripId: sessionId,
+                        role: "assistant",
+                        content: aiContent,
+                        ui: aiUi,
+                        timestamp: getCurrentTime()
+                    });
+                }
             }
 
         } catch (error) {
             console.error(error);
+
+            // Enhanced error handling with specific messages
+            let errorMessage = "Something went wrong. Please try again.";
+
+            if (axios.isAxiosError(error)) {
+                // Check for credit limit error
+                if (error.response?.data?.resp === "No Free Credit Remaining") {
+                    errorMessage = "🎯 You've used your 2 free trips! Upgrade to premium for unlimited trip planning.";
+                }
+                // Check for network errors
+                else if (error.response?.data?.error) {
+                    const apiError = error.response.data.error;
+                    if (apiError.includes("Network connection issue") || apiError.includes("fetch failed")) {
+                        errorMessage = "⚠️ Network connection issue detected. The AI service is temporarily unavailable. Please check your internet connection and try again in a moment.";
+                    } else if (apiError.includes("API key")) {
+                        errorMessage = "⚠️ Configuration error. Please contact support.";
+                    } else {
+                        errorMessage = `⚠️ ${apiError}`;
+                    }
+                }
+                // Network timeout or connection refused
+                else if (error.code === 'ECONNABORTED' || error.code === 'ERR_NETWORK') {
+                    errorMessage = "⚠️ Connection timeout. Please check your internet connection and try again.";
+                }
+                // Server error (500)
+                else if (error.response?.status === 500) {
+                    errorMessage = "⚠️ Server error occurred. Our team has been notified. Please try again in a moment.";
+                }
+            }
+
             setMessages((prev) => [...prev, {
                 role: "assistant",
-                content: "Something went wrong generating the plan. Please try again.",
+                content: errorMessage,
                 timestamp: getCurrentTime()
             }]);
+
+            if (sessionId) {
+                await saveMessage({
+                    tripId: sessionId,
+                    role: "assistant",
+                    content: errorMessage,
+                    timestamp: getCurrentTime()
+                });
+            }
         } finally {
             setLoading(false);
         }
@@ -389,27 +498,37 @@ function ChatBox() {
             </div>
 
             {/* TASK 4: Chat Input Area */}
-            <div className='p-4 pb-6 bg-white dark:bg-black border-t border-gray-100 dark:border-gray-800 sticky bottom-0 z-10'>
-                <div className="relative rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 p-1 focus-within:ring-2 focus-within:ring-blue-100 dark:focus-within:ring-blue-900/30 transition-all">
-                    <Textarea
-                        placeholder="Type your message..."
-                        className="min-h-[50px] max-h-[150px] w-full resize-none border-none bg-transparent shadow-none focus-visible:ring-0 p-3 pr-12 text-base"
-                        onChange={(e) => setUserInput(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        value={userInput}
-                    />
-                    <Button
-                        size="icon"
-                        className={`absolute bottom-2 right-2 h-8 w-8 transition-all ${!userInput.trim() || loading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}`}
-                        onClick={() => onSend()}
-                        disabled={!userInput.trim() || loading}
-                    >
-                        {loading ? <Loader className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                    </Button>
+            <div className='bg-white dark:bg-black sticky bottom-0 z-10'>
+                {/* Visual Divider to separate chat from controls */}
+                <div className="w-full h-px bg-gray-100 dark:bg-gray-800 mb-4" />
+
+                {/* Credit Status Zone */}
+                <div className="mb-2">
+                    <CreditDisplay key={refreshCredits} />
                 </div>
-                <p className="text-center text-[10px] text-gray-400 mt-2">
-                    Enter to send, Shift + Enter for new line
-                </p>
+
+                <div className='px-4 pb-6'>
+                    <div className="relative rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 p-1 focus-within:ring-2 focus-within:ring-blue-100 dark:focus-within:ring-blue-900/30 transition-all">
+                        <Textarea
+                            placeholder="Type your message..."
+                            className="min-h-[50px] max-h-[150px] w-full resize-none border-none bg-transparent shadow-none focus-visible:ring-0 p-3 pr-12 text-base"
+                            onChange={(e) => setUserInput(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            value={userInput}
+                        />
+                        <Button
+                            size="icon"
+                            className={`absolute bottom-2 right-2 h-8 w-8 transition-all ${!userInput.trim() || loading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}`}
+                            onClick={() => onSend()}
+                            disabled={!userInput.trim() || loading}
+                        >
+                            {loading ? <Loader className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                        </Button>
+                    </div>
+                    <p className="text-center text-[10px] text-gray-400/60 mt-3">
+                        Enter to send, Shift + Enter for new line
+                    </p>
+                </div>
             </div>
 
             {/* Edit Trip Modal */}

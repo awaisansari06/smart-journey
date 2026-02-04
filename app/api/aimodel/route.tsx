@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { aj } from "@/app/api/arcjet/route";
+import { ajFree, ajPremium } from "@/app/api/arcjet/route";
 import { auth, currentUser } from "@clerk/nextjs/server";
 
 // Initialize Gemini
@@ -264,47 +264,115 @@ Output Schema:
 }
 `;
 
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "@/convex/_generated/api";
+
+// Initialize Convex Client
+const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+
 export async function POST(request: NextRequest) {
   try {
     const { messages, isFinal } = await request.json();
     const user = await currentUser();
-    const { has } = await auth();
-    const hasPremiumAccess = has({ plan: "monthly" });
-    // Premium access check completed
-    const decision = await aj.protect(request, { userId: user?.primaryEmailAddress?.emailAddress ?? '', requested: isFinal ? 5 : 0 }); // Deduct 5 tokens for ALL requests for testing
+    // No longer using Clerk's "has" for premium check
+    // const { has } = await auth();
+    // const hasPremiumAccess = has({ plan: "monthly" });
 
+    const email = user?.primaryEmailAddress?.emailAddress;
+    let hasPremiumAccess = false;
 
-
-    // Arcjet rate limiting check completed
-
-    if ((decision.reason as any)?.remaining === 0 && !hasPremiumAccess) {
-      return NextResponse.json({
-        resp: "No Free Credit Remaining",
-        ui: "limit"
-      });
+    if (email) {
+      // Fetch user from Convex to check subscription
+      const convexUser = await convex.query(api.user.GetUser, { email });
+      // Check if subscription column indicates premium (monthly or annually)
+      const subscription = convexUser?.subscription;
+      hasPremiumAccess = subscription === "monthly" || subscription === "annually";
     }
 
     // 1. Separate the last user message from the history
     const lastMessage = messages[messages.length - 1];
+    const isGenerationRequest = lastMessage.content.toLowerCase().includes("generate") || isFinal;
+
+    // Select the appropriate Arcjet instance based on user type
+    const arcjetInstance = hasPremiumAccess ? ajPremium : ajFree;
+
+    console.log(`[TripGen] User: ${email}, Premium: ${hasPremiumAccess}, Requesting Deduction: ${isGenerationRequest}`);
+
+    // Check rate limits for both free and premium users
+    const decision = await arcjetInstance.protect(request, {
+      userId: email ?? '',
+      requested: isGenerationRequest ? 1 : 0
+    }); // Deduct 1 token only when generating final trip
+
+    // Safe logging with type checking
+    const remaining = (decision.reason as any)?.remaining;
+    console.log(`[TripGen] Decision: ${decision.conclusion}, Remaining: ${remaining}`);
+
+    // Check if user has credits remaining
+    if (remaining === 0) {
+      console.log("[TripGen] Credit limit reached");
+      return NextResponse.json({
+        resp: hasPremiumAccess
+          ? "You've used all 100 premium credits. Please contact support for more."
+          : "No Free Credit Remaining",
+        ui: "limit"
+      });
+    }
+
+    // 1. Separate the last user message from the history (reusing variable)
     const historyMessages = messages.slice(0, -1);
 
     // 2. Select Prompt
     const activePrompt = isFinal ? FINAL_PROMPT : PROMPT;
 
     // 3. Start the Chat Session with System Instructions
-    const chat = model.startChat({
-      history: historyMessages.map((msg: any) => ({
+    // Sanitize history to remove messages with empty/null content which cause Gemini 400 errors
+    const sanitizedHistory = historyMessages
+      .filter((msg: any) => msg.content && typeof msg.content === 'string' && msg.content.trim().length > 0)
+      .map((msg: any) => ({
         role: msg.role === "assistant" ? "model" : "user",
         parts: [{ text: msg.content }],
-      })),
+      }));
+
+    const chat = model.startChat({
+      history: sanitizedHistory,
       systemInstruction: {
         role: 'system',
         parts: [{ text: activePrompt }]
       },
     });
 
-    // 4. Send the message
-    const result = await chat.sendMessage(lastMessage.content);
+    const userMessage = lastMessage.content || "Generate trip plan"; // Fallback safety
+
+    // 4. Send the message with retry logic
+    let result;
+    let lastError;
+    const maxRetries = 3;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`Attempt ${attempt}/${maxRetries} to send message to Gemini API...`);
+        result = await chat.sendMessage(userMessage);
+        console.log(`✅ Successfully received response from Gemini API`);
+        break; // Success, exit retry loop
+      } catch (error) {
+        lastError = error;
+        console.error(`❌ Attempt ${attempt}/${maxRetries} failed:`, error instanceof Error ? error.message : error);
+
+        if (attempt < maxRetries) {
+          // Exponential backoff: 1s, 2s, 4s
+          const delayMs = Math.pow(2, attempt - 1) * 1000;
+          console.log(`⏳ Retrying in ${delayMs}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delayMs));
+        }
+      }
+    }
+
+    // If all retries failed, throw the last error
+    if (!result) {
+      throw new Error(`Failed to connect to Gemini API after ${maxRetries} attempts: ${lastError instanceof Error ? lastError.message : 'Unknown error'}`);
+    }
+
     const responseText = result.response.text();
 
     // 5. Return parsed JSON (Safe extraction)
@@ -314,10 +382,27 @@ export async function POST(request: NextRequest) {
     }
 
     const jsonStr = jsonMatch[0];
-    return NextResponse.json(JSON.parse(jsonStr));
+    const parsedJson = JSON.parse(jsonStr);
+
+    console.log("✅ [TripGen] SUCCESS. Returning JSON.");
+    console.log(`[TripGen] Remaining Credits: ${remaining}`);
+
+    return NextResponse.json(parsedJson);
   } catch (e) {
     console.error("Error in AI Model API:", e);
     const errorMessage = e instanceof Error ? e.message : "Unknown error occurred";
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+
+    // Provide more helpful error messages
+    let userMessage = errorMessage;
+    if (errorMessage.includes("fetch failed") || errorMessage.includes("Failed to connect")) {
+      userMessage = "Network connection issue. Please check your internet connection and try again.";
+    } else if (errorMessage.includes("API key")) {
+      userMessage = "API key validation failed. Please check your Gemini API key configuration.";
+    }
+
+    return NextResponse.json({
+      error: userMessage,
+      details: errorMessage
+    });
   }
 }

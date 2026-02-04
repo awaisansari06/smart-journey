@@ -57,4 +57,5 @@ export type ModalItem = {
     images?: string[]; // Array of images for carousel
     context?: string; // e.g. "Day 3 • Afternoon"
     geoCoordinates: { lat: number; lng: number } | string;
+    countryName?: string;
 };
